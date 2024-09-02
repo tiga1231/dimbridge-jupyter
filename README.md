@@ -1,10 +1,23 @@
 # dimbridge
 
+A Jupyter lab widget for interpreting visual patterns in dimensionality reduction plots
+
+Based on the work:
+[DimBridge: Interactive Explanation of Visual Patterns in Dimensionality Reductions with Predicate Logic
+](https://arxiv.org/abs/2404.07386)
+
+## Example
+```
+```
+See details in [example.ipynb](./example.ipynb)
+
+
 ## Installation
 
 ```sh
 pip install dimbridge
 ```
+
 
 ## Development installation
 

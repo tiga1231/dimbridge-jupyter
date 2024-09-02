@@ -6,5 +6,7 @@ dist
 # Python
 __pycache__
 .ipynb_checkpoints
+.virtual_documents
 
+# bundle output
 src/dimbridge/static
