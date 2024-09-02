@@ -8,5 +8,3 @@ def numpy2json(data, widget):
 
 def pandas2json(data, widget):
     raise NotImplementedError
-
-

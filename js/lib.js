@@ -86,6 +86,20 @@ function reshape2d(arr, r, c) {
 }
 
 // --------------- Vis Utils -----------------
+export function flexbox(items, width) {
+    // wrap items in a div contrainer with flexbox properties
+    let res = d3
+        .create("div")
+        .style("width", `${width}px`)
+        .style("display", "inline-flex")
+        .style("flex-direction", "row")
+        .style("flex-wrap", "wrap");
+    items.forEach((i) => {
+        res.node().appendChild(i);
+    });
+    return res.node();
+}
+
 export function create_svg(width = 400, height = 300, bg = undefined) {
     let svg = d3.create("svg").attr("width", width).attr("height", height);
     if (bg) {
