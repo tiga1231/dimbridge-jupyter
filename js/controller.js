@@ -41,6 +41,7 @@ export class InteractionController {
         let predicate_attributes = attributes;
         //The dimension of splom attributes
         let splom_attributes;
+        let manual_splom_attributes = ["d1", "d2", "d3"]; //TODO
         if (predicate_attributes !== undefined) {
             splom_attributes = predicate_attributes;
         } else if (manual_splom_attributes) {

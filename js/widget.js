@@ -6,7 +6,16 @@ import math from "./lib/math.js";
 // custom
 import "./widget.css";
 import * as lib from "./lib.js";
-import { C, reshape, create_svg, linspace, zip, flexbox } from "./lib.js";
+import {
+    C,
+    reshape,
+    create_svg,
+    linspace,
+    zip,
+    flexbox,
+    numpy2array,
+    pandas2array,
+} from "./lib.js";
 import { ProjectionView, PredicateView, SplomView } from "./views.js";
 import { InteractionController } from "./controller.js";
 
@@ -19,21 +28,29 @@ let cell_width;
 let config = {
     margin_outer: 10,
     margin_inner: 4,
-    scatter_padding: 2,
     font_size: 16,
     gap: 10,
+
+    width: 1000,
+    scatter_padding: 2,
+    scatter_width: 0.4,
+    scatter_height: 0.4,
+
+    predicate_view_subplot_height: 20,
+    predicate_view_fontsize: 14,
 };
+
+// widget
+function cleanup() {
+    // Optional. Cleanup callback.
+    // Executed any time the view is removed from the DOM
+}
 
 export default {
     initialize({ model }) {
-        console.log("init");
-        console.log("output width");
+        console.log("dimbridge widget init");
         cell_width = d3.select(".jp-OutputArea-output").style("width");
-    },
-
-    cleanup() {
-        // Optional. Cleanup callback.
-        // Executed any time the view is removed from the DOM
+        console.log("output width", cell_width);
     },
 
     render({ model, el }) {
@@ -41,32 +58,41 @@ export default {
         console.log("MODEL", model);
         console.log("EL", el);
         let controller = new InteractionController();
-        let projection_view = new ProjectionView(controller);
-        let predicate_view = new PredicateView(controller);
-        let splom_view = new SplomView(projection_view, controller);
-        // let controller manage between-view interactions
+        let data = pandas2array(model.get("data"));
+        let x = numpy2array(model.get("x"));
+        let y = numpy2array(model.get("y"));
+
+        let projection_view = new ProjectionView(
+            data,
+            { x: (d, i) => x[i], y: (d, i) => y[i] },
+            controller,
+            config,
+        );
+
+        let predicate_view = new PredicateView(data, controller, config);
+        let splom_view = { node: create_svg().node(), draw: () => {} }; //dummy view
+        // let splom_view = new SplomView(data, controller, config);
+        //// let controller manage between-view interactions
         controller.add_views(projection_view, predicate_view, splom_view);
 
-        //add margins between view components
-        d3.select(projection_view.node).style(
-            "margin-right",
-            `${config.gap}px`,
-        );
-        d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
-        //return main view
+        ////add margins between view components
+        //d3.select(projection_view.node).style(
+        //    "margin-right",
+        //    `${config.gap}px`,
+        //);
+        //d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
+        ////return main view
         let return_node = flexbox(
             [projection_view.node, predicate_view.node, splom_view.node],
             width,
         );
+        el.appendChild(return_node);
         // set_value(return_node, { projection_view, predicate_view, splom_view });
-
         return cleanup;
 
         //// get plot data
-        //let x = lib.numpy2array(model.get("x"));
-        //let y = lib.numpy2array(model.get("y"));
-        //let c = lib.numpy2array(model.get("c")); // color
-        //let s = lib.numpy2array(model.get("s")); // mark size
+        //let c = numpy2array(model.get("c")); // color
+        //let s = numpy2array(model.get("s")); // mark size
 
         //// style data
         //let width = model.get("width");

@@ -19,6 +19,28 @@ const pyplot_cycles = [
 export const C = pyplot_cycles;
 
 // --------------- data utils ---------------
+export function pandas2array(data_obj) {
+    //parse individual column data from DataView to arrays
+    for (let j = 0; j < data_obj.shape[1]; j++) {
+        data_obj.data[j] = numpy2array({
+            dtype: data_obj.dtypes[j],
+            shape: [data_obj.shape[0]],
+            data: data_obj.data[j],
+        });
+    }
+    //construct an array of objects
+    // data = [{column_name: column_value}...];
+    let data = [];
+    for (let i = 0; i < data_obj.shape[0]; i++) {
+        let datum = Object.fromEntries(
+            data_obj.columns.map((c, j) => [c, data_obj.data[j][i]]),
+        );
+        data.push(datum);
+    }
+
+    return data;
+}
+
 export function numpy2array(data_obj) {
     // parameters
     // data_obj - { dtype: "float64", shape: [2, 3], data: DatavView }
@@ -47,6 +69,7 @@ export function numpy2array(data_obj) {
     data = reshape(Array.from(data), shape);
     return data;
 }
+
 export function zip(a, b) {
     return a.map((ai, i) => [ai, b[i]]);
 }
@@ -86,8 +109,23 @@ function reshape2d(arr, r, c) {
 }
 
 // --------------- Vis Utils -----------------
+export function overflow_box(node, height, width = undefined) {
+    let wrapping_div = d3
+        .create("div")
+        .classed("overflow", true)
+        .style("height", `${height}px`)
+        .style("overflow", "auto")
+        .style("scrollbar-width", "none"); ///* Firefox, hide scroll bar */
+
+    if (width !== undefined) {
+        wrapping_div.style("width", `${width}px`);
+    }
+    wrapping_div.node().appendChild(node);
+    return wrapping_div.node();
+}
+
 export function flexbox(items, width) {
-    // wrap items in a div contrainer with flexbox properties
+    // wrap items in a div with flexbox properties
     let res = d3
         .create("div")
         .style("width", `${width}px`)
@@ -197,13 +235,14 @@ export function scatter(
 
     //marks
     let r = (d, i) => Math.sqrt(s(d, i));
+    console.log("x function", sx(x(0, 1)));
     let points = fg
         .selectAll(".point")
         .data(data, (d, i) => (d.id !== undefined ? d.id : i))
         .join("circle")
         .attr("class", "point")
-        .attr("cx", (d) => sx(x(d)))
-        .attr("cy", (d) => sy(y(d)))
+        .attr("cx", (d, i) => sx(x(d, i)))
+        .attr("cy", (d, i) => sy(y(d, i)))
         .attr("fill", (d, i) => sc(d, i))
         .attr("stroke-width", stroke_width)
         .attr("stroke", stroke)
@@ -399,8 +438,8 @@ export function frame(
         sel = create_svg(width, height);
     }
     //domain / extent
-    let ex = data !== undefined ? d3.extent(data, (d) => x(d)) : [0, 1];
-    let ey = data !== undefined ? d3.extent(data, (d) => y(d)) : [0, 1];
+    let ex = data !== undefined ? d3.extent(data, (d, i) => x(d, i)) : [0, 1];
+    let ey = data !== undefined ? d3.extent(data, (d, i) => y(d, i)) : [0, 1];
     if (x_tickvalues !== undefined) {
         ex[0] = Math.min(ex[0], d3.min(x_tickvalues));
         ex[1] = Math.max(ex[1], d3.max(x_tickvalues));

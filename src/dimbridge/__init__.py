@@ -4,6 +4,7 @@ import pathlib
 
 # computational
 import numpy as np
+import pandas as pd
 
 # anywidget / UI
 import anywidget
@@ -39,6 +40,7 @@ class Dimbridge(anywidget.AnyWidget):
     _css = pathlib.Path(__file__).parent / "static" / "widget.css"
 
     # input attributes
+    data = Instance(pd.DataFrame).tag(sync=True, to_json=pandas2json)
     x = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)
     y = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)
     c = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark color
@@ -63,3 +65,7 @@ class Dimbridge(anywidget.AnyWidget):
     def _observe_selected(self, change):
         # print("selected: ", change)
         pass
+
+    def __repr__(self):
+        """bypass ipywidget's __repr__() from printing Pandas DataFrame"""
+        return "DimBridge()"
