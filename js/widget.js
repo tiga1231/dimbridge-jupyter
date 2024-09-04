@@ -16,7 +16,10 @@ import {
     numpy2array,
     pandas2array,
 } from "./lib.js";
-import { ProjectionView, PredicateView, SplomView } from "./views.js";
+
+import ProjectionView from "./ProjectionView.js";
+import PredicateView from "./PredicateView.js";
+import SplomView from "./SplomView.js";
 import { InteractionController } from "./controller.js";
 
 // ----------- View Components ------------
@@ -57,18 +60,22 @@ export default {
         let width = cell_width;
         console.log("MODEL", model);
         console.log("EL", el);
-        let controller = new InteractionController();
+
+        //get data from python
         let data = pandas2array(model.get("data"));
         let x = numpy2array(model.get("x"));
         let y = numpy2array(model.get("y"));
 
+        //init controller
+        let controller = new InteractionController();
+
+        //init views
         let projection_view = new ProjectionView(
             data,
             { x: (d, i) => x[i], y: (d, i) => y[i] },
             controller,
             config,
         );
-
         let predicate_view = new PredicateView(data, controller, config);
         let splom_view = { node: create_svg().node(), draw: () => {} }; //dummy view
         // let splom_view = new SplomView(data, controller, config);
