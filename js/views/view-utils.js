@@ -1,3 +1,9 @@
+/*
+ * Shared utility functions across multiple view components
+ *
+ * TODO move functions unique to some view to the corresponding view class files
+ */
+
 import * as d3 from "https://esm.sh/d3@7";
 import { default as crossfilter } from "https://cdn.skypack.dev/crossfilter2@1.5.4?min";
 import {
@@ -16,7 +22,6 @@ import {
     overflow_box,
 } from "../lib.js";
 
-// ------------ View Utils --------------------
 export function predicate_single(
     g_container,
     controller,

@@ -77,9 +77,10 @@ export default {
             config,
         );
         let predicate_view = new PredicateView(data, controller, config);
-        let splom_view = { node: create_svg().node(), draw: () => {} }; //dummy view
-        // let splom_view = new SplomView(data, controller, config);
-        //// let controller manage between-view interactions
+        // let splom_view = { node: create_svg().node(), draw: () => {} }; //dummy view
+        let splom_view = new SplomView(data, controller, config);
+
+        // tell controller to manage between-view interactions
         controller.add_views(projection_view, predicate_view, splom_view);
 
         ////add margins between view components
