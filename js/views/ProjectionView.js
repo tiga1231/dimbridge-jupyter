@@ -1,6 +1,44 @@
 import * as d3 from "https://esm.sh/d3@7";
+import { default as crossfilter } from "https://cdn.skypack.dev/crossfilter2@1.5.4?min";
+import {
+    make_frame,
+    make_sub_frame,
+    make_bridge_frame,
+} from "../lib/fancy-frames.js";
+
+import {
+    C,
+    reshape,
+    create_svg,
+    linspace,
+    zip,
+    scatter,
+    overflow_box,
+} from "../lib.js";
+
+import {
+    define_arrowhead,
+    compute_predicates,
+    update_brush_history,
+    clear_selected,
+    set_selected,
+    set_selected2,
+    get_selected,
+    update_point_style,
+    draw_boxes,
+    set_pred,
+} from "./view-utils.js";
+
 export default class ProjectionView {
-    constructor(data, { x, y } = {}, controller, config) {
+    constructor(
+        data,
+        {
+            x, //array of x coordinates for the DR projection
+            y,
+        } = {},
+        controller,
+        config,
+    ) {
         /*
     - Takes projection coordinates and reorder it
     - Knows hwo to color points within it
@@ -8,12 +46,12 @@ export default class ProjectionView {
     - For now (maybe move to somewhere else in the future), its brush also ask backend for predicates and retain that knowledge of predicates
   */
         this.data = data;
+        this.x = x;
+        this.y = y;
         this.controller = controller;
         this.config = config;
 
         this.node = this.init_node();
-        this.x = x;
-        this.y = y;
         this.draw();
         this.brush = this.init_brush();
         this.brush_mode = "single"; //TODO support "contrustive" and "curve"
@@ -92,8 +130,8 @@ export default class ProjectionView {
 
         //draw projection scatter plot
         this.sca = scatter(this.projection_g, data, {
-            x: this.x,
-            y: this.y,
+            x: (d, i) => this.x[i],
+            y: (d, i) => this.y[i],
             s: (d) => 5,
             width: this.plot_width,
             height: this.plot_height,
@@ -240,13 +278,18 @@ export default class ProjectionView {
         //eager draw: in 'data extent' mode, draw highlights on splom immediately
         if (this.predicate_mode === "data extent") {
             //compute predicates based on selected data
+            //TODO fixme elsewhere
+            this.data.forEach((d, i) => {
+                d.x = this.x[i];
+                d.y = this.y[i];
+            });
             let { predicates, attributes, qualities } =
                 await compute_predicates(
                     this.data,
                     this.full_brush_history,
                     this.n_boxes,
                     this.predicate_mode,
-                    { x: (d, i) => this.x[i], y: (d, i) => this.y[i] },
+                    { x: (d, i) => d.x, y: (d, i) => d.y },
                 );
 
             if (predicates !== undefined && predicates.length >= 1) {
@@ -256,6 +299,10 @@ export default class ProjectionView {
                 update_point_style(this.sca, "selection");
             }
 
+            console.log("projection view updating other views...");
+            console.log("predicates", predicates);
+            console.log("attributes", attributes);
+
             //update other views
             this.controller.on_projection_view_change({
                 predicates,
@@ -264,8 +311,8 @@ export default class ProjectionView {
                 n_boxes: this.n_boxes,
                 full_brush_history: this.full_brush_history,
                 sample_brush_history: this.sample_brush_history,
-                x: this.x,
-                y: this.y,
+                x: (d, i) => this.x[i],
+                y: (d, i) => this.y[i],
             });
         }
     }
@@ -330,8 +377,8 @@ export default class ProjectionView {
                 n_boxes: this.n_boxes,
                 full_brush_history: this.full_brush_history,
                 sample_brush_history: this.sample_brush_history,
-                x: this.x,
-                y: this.y,
+                x: (d, i) => this.x[i],
+                y: (d, i) => this.y[i],
             });
         }
 

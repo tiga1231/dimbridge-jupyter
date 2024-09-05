@@ -1,4 +1,21 @@
 import * as d3 from "https://esm.sh/d3@7";
+import {
+    make_frame,
+    make_sub_frame,
+    make_bridge_frame,
+} from "../lib/fancy-frames.js";
+
+import {
+    C,
+    reshape,
+    create_svg,
+    linspace,
+    zip,
+    scatter,
+    overflow_box,
+} from "../lib.js";
+
+import { predicate_single, get_selected } from "./view-utils.js";
 
 export default class PredicateView {
     svg;

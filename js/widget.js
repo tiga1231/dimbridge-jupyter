@@ -17,9 +17,9 @@ import {
     pandas2array,
 } from "./lib.js";
 
-import ProjectionView from "./ProjectionView.js";
-import PredicateView from "./PredicateView.js";
-import SplomView from "./SplomView.js";
+import ProjectionView from "./views/ProjectionView.js";
+import PredicateView from "./views/PredicateView.js";
+import SplomView from "./views/SplomView.js";
 import { InteractionController } from "./controller.js";
 
 // ----------- View Components ------------
@@ -72,7 +72,7 @@ export default {
         //init views
         let projection_view = new ProjectionView(
             data,
-            { x: (d, i) => x[i], y: (d, i) => y[i] },
+            { x, y },
             controller,
             config,
         );
@@ -83,11 +83,11 @@ export default {
         controller.add_views(projection_view, predicate_view, splom_view);
 
         ////add margins between view components
-        //d3.select(projection_view.node).style(
-        //    "margin-right",
-        //    `${config.gap}px`,
-        //);
-        //d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
+        d3.select(projection_view.node).style(
+            "margin-right",
+            `${config.gap}px`,
+        );
+        d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
         ////return main view
         let return_node = flexbox(
             [projection_view.node, predicate_view.node, splom_view.node],

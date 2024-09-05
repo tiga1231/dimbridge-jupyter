@@ -1,11 +1,10 @@
 import * as d3 from "https://esm.sh/d3@7";
 import { default as crossfilter } from "https://cdn.skypack.dev/crossfilter2@1.5.4?min";
-
 import {
     make_frame,
     make_sub_frame,
     make_bridge_frame,
-} from "./fancy-frames.js";
+} from "../lib/fancy-frames.js";
 
 import {
     C,
@@ -15,10 +14,10 @@ import {
     zip,
     scatter,
     overflow_box,
-} from "./lib.js";
+} from "../lib.js";
 
 // ------------ View Utils --------------------
-function predicate_single(
+export function predicate_single(
     g_container,
     controller,
     extent,
@@ -196,7 +195,7 @@ function predicate_single(
             .attr("text-anchor", "end")
             // .attr("alignment-baseline", "central")
             .style("font-size", `${font_size}px`)
-            .text((d) => attr2label[d]);
+            .text((d) => d);
 
         //draw images
         if (selected && data[0].image_url !== undefined) {
@@ -255,7 +254,7 @@ function predicate_single(
     return g_container;
 }
 
-function predicate_contrastive(
+export function predicate_contrastive(
     g_container,
     {
         width = 100,
@@ -313,7 +312,7 @@ function predicate_contrastive(
             .attr("text-anchor", "end")
             // .attr("alignment-baseline", "central")
             .style("font-size", `${font_size}px`)
-            .text((d) => attr2label[d]);
+            .text((d) => d);
 
         g.selectAll("g.predicate-view-single")
             .data([0, 1])
@@ -471,7 +470,7 @@ function predicate_contrastive(
     return g_container;
 }
 
-function predicate_multiple(
+export function predicate_multiple(
     g_container,
     {
         width = 100,
@@ -640,7 +639,7 @@ function predicate_multiple(
             .data([container.datum()])
             .join("text")
             .attr("class", "attr-label")
-            .text((d) => attr2label[d])
+            .text((d) => d)
             //bottom
             .attr("x", width / 2)
             .attr("y", height + font_size)
@@ -782,7 +781,7 @@ function predicate_multiple(
     return g_container;
 }
 
-function set_pred(data, predicate) {
+export function set_pred(data, predicate) {
     // compute prediction from given predicate
     // and set to d.pred for each item in data
     data.forEach((d, i) => {
@@ -799,7 +798,7 @@ function set_pred(data, predicate) {
     });
 }
 
-function data_extent_predicate(data, selected, attributes) {
+export function data_extent_predicate(data, selected, attributes) {
     //From brush data, produce predicates derived base on data extent only.
     //Front end only. No backend server
     let selected_data = data.filter((d, i) => selected[i]);
@@ -821,7 +820,14 @@ function data_extent_predicate(data, selected, attributes) {
     }
 }
 
-function set_selected(data, brushed_region, x, y, cf, crossfilter_dimensions) {
+export function set_selected(
+    data,
+    brushed_region,
+    x,
+    y,
+    cf,
+    crossfilter_dimensions,
+) {
     let { x0, x1, y0, y1 } = brushed_region;
     crossfilter_dimensions["x"].filter((v) => v >= x0 && v <= x1);
     crossfilter_dimensions["y"].filter((v) => v >= y0 && v <= y1);
@@ -833,7 +839,7 @@ function set_selected(data, brushed_region, x, y, cf, crossfilter_dimensions) {
     });
 }
 
-function set_selected_2(data, sample_brush_history, x, y) {
+export function set_selected_2(data, sample_brush_history, x, y) {
     if (sample_brush_history.length < 2) return;
     data.forEach((d) => {
         d.selected = false;
@@ -854,7 +860,7 @@ function set_selected_2(data, sample_brush_history, x, y) {
     });
 }
 
-function clear_selected(data) {
+export function clear_selected(data) {
     data.forEach((d) => {
         d.brushed = false;
         d.selected = false;
@@ -863,7 +869,7 @@ function clear_selected(data) {
     });
 }
 
-function subsample(array, limit = 10) {
+export function subsample(array, limit = 10) {
     // Usage:
     // subsample(d3.range(50), 10) // => [0, 5, 11, 16, 22, 27, 33, 38, 44, 49]
 
@@ -888,7 +894,7 @@ function subsample(array, limit = 10) {
     }
 }
 
-function get_selected(data, brush_data, { x, y } = {}) {
+export function get_selected(data, brush_data, { x, y } = {}) {
     //return list of boolean based on brush selection
     // x, y are coordinate getter functions for points in data
     let { x_extent, y_extent } = brush_data;
@@ -901,7 +907,7 @@ function get_selected(data, brush_data, { x, y } = {}) {
     });
 }
 
-function define_arrowhead(svg) {
+export function define_arrowhead(svg) {
     //def #arrowhead
     let marker_style = { w: 4, h: 4 };
     let m = marker_style;
@@ -914,7 +920,11 @@ function define_arrowhead(svg) {
   `;
 }
 
-function update_brush_history(full_brush_history, brushed_region, n_boxes) {
+export function update_brush_history(
+    full_brush_history,
+    brushed_region,
+    n_boxes,
+) {
     let { x0, x1, y0, y1, cx, cy, brush_size } = brushed_region;
     full_brush_history.push({
         x_extent: [x0, x1],
@@ -929,15 +939,15 @@ function update_brush_history(full_brush_history, brushed_region, n_boxes) {
     return sample_brush_history;
 }
 
-async function compute_predicates(
+export async function compute_predicates(
     data,
     full_brush_history,
     n_boxes,
     predicate_mode,
     { x, y } = {},
 ) {
-    //filter and consider non-empty brushes only
     full_brush_history = full_brush_history.filter((brush_data) => {
+        //filter and consider non-empty brushes only
         let selected = get_selected(data, brush_data, { x, y });
         return d3.sum(selected) > 0;
     });
@@ -947,9 +957,10 @@ async function compute_predicates(
     }
 
     let predicates, qualities, attributes;
-    let manual_splom_attributes = Object.keys(data[0]).slice(0, 5); //TODO
     let sample_brush_history = subsample(full_brush_history, n_boxes);
-    if (predicate_mode == "data extent") {
+
+    if (predicate_mode === "data extent") {
+        let manual_splom_attributes = ["d1", "d2", "d3", "d4"]; //TODO
         // let selected_data = data.filter((d, i) => selected[i]);
         predicates = sample_brush_history.map((brush_data) => {
             let selected = get_selected(data, brush_data, { x, y });
@@ -990,7 +1001,7 @@ async function compute_predicates(
     return { predicates, qualities, attributes };
 }
 
-function update_point_style(sca, mode = "confusion") {
+export function update_point_style(sca, mode = "confusion") {
     let style = get_point_style(mode);
     sca.update_style(style);
     //raise
@@ -1002,7 +1013,7 @@ function update_point_style(sca, mode = "confusion") {
         .raise();
 }
 
-function get_point_style(mode = "confusion") {
+export function get_point_style(mode = "confusion") {
     let style;
     if (mode === "confusion") {
         //set style - color by confusion (tp, tn, fp, fn)
@@ -1032,7 +1043,7 @@ function get_point_style(mode = "confusion") {
     return style;
 }
 
-function draw_boxes(sca, intervals, { stroke_width = 2 } = {}) {
+export function draw_boxes(sca, intervals, { stroke_width = 2 } = {}) {
     let { sx, sy } = sca.scales;
     let n = intervals.length;
     let sc = d3.interpolateViridis;
