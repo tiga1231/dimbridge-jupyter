@@ -1,4 +1,4 @@
-import * as d3 from "https://esm.sh/d3@7";
+import * as d3 from "d3";
 import { default as crossfilter } from "https://cdn.skypack.dev/crossfilter2@1.5.4?min";
 import {
     make_frame,
@@ -18,7 +18,6 @@ import {
 
 import {
     define_arrowhead,
-    compute_predicates,
     update_brush_history,
     clear_selected,
     set_selected,
@@ -28,6 +27,8 @@ import {
     draw_boxes,
     set_pred,
 } from "./view-utils.js";
+
+import { compute_predicates } from "../PredicateEngine.js";
 
 export default class ProjectionView {
     constructor(
@@ -50,35 +51,37 @@ export default class ProjectionView {
         this.y = y;
         this.controller = controller;
         this.config = config;
+        this.attributes = Object.keys(data[0]);
 
+        this.cf = this.init_crossfilter(data);
         this.node = this.init_node();
         this.draw();
         this.brush = this.init_brush();
         this.brush_mode = "single"; //TODO support "contrustive" and "curve"
         this.predicate_mode = "data extent"; // TODO "predicate regression"
 
-        //crossfilter init
-        //given attributes and cf (crossfilter);
-        //return an object with keys being attributes,
+        return this;
+    }
+
+    init_crossfilter(data) {
+        //Take all keys in data[0] as attributes,
+        //Returns
+        //this.crossfilter_dimensions - an object with keys being attributes,
         //and values beinging the corresponding crossfilter dimension objects
-        let attributes = Object.keys(data[0]);
+        let cf_attributes = Object.keys(data[0]);
         let cf = crossfilter(data);
-        let cf_dimensions = attributes.map((attr) =>
+        let cf_dimensions = cf_attributes.map((attr) =>
             cf.dimension((d) => d[attr]),
         );
-
-        attributes.push("x", "y");
+        cf_attributes.push("x", "y");
         cf_dimensions.push(
-            cf.dimension((d, i) => x[i]),
-            cf.dimension((d, i) => y[i]),
+            cf.dimension((d, i) => this.x[i]),
+            cf.dimension((d, i) => this.y[i]),
         );
-
-        this.cf = cf;
         this.crossfilter_dimensions = Object.fromEntries(
-            zip(attributes, cf_dimensions),
+            zip(cf_attributes, cf_dimensions),
         );
-
-        return this;
+        return cf;
     }
 
     init_node() {
@@ -289,6 +292,7 @@ export default class ProjectionView {
                     this.full_brush_history,
                     this.n_boxes,
                     this.predicate_mode,
+                    this.attributes,
                     { x: (d, i) => d.x, y: (d, i) => d.y },
                 );
 
@@ -346,6 +350,7 @@ export default class ProjectionView {
             this.full_brush_history,
             this.n_boxes,
             this.predicate_mode,
+            this.attributes,
             { x: (d, i) => this.x[i], y: (d, i) => this.y[i] },
         );
 

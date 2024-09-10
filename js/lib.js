@@ -1,7 +1,8 @@
 // partial copy of https://observablehq.com/@tiga1231/lib
 
-import * as d3 from "https://esm.sh/d3@7";
+import * as d3 from "d3";
 import { default as crossfilter } from "https://cdn.skypack.dev/crossfilter2@1.5.4?min";
+import regl2 from "regl";
 
 // ------------ Constants ---------------
 const pyplot_cycles = [
@@ -109,6 +110,441 @@ function reshape2d(arr, r, c) {
 }
 
 // --------------- Vis Utils -----------------
+export function create_scatter_gl_program(regl) {
+    let vert = `
+    precision mediump float;
+    attribute vec2 position;
+    attribute vec4 color;
+    attribute float size;
+    attribute float depth;
+    varying float v_size;
+    varying vec4 v_color;
+
+    void main() {
+      gl_Position = vec4(position, depth, 1.0);
+      gl_PointSize = size;
+      v_color = color;
+      v_size = size;
+    }`;
+
+    let frag = `
+    precision mediump float;
+    varying vec4 v_color;
+    varying float v_size;
+    uniform vec3 u_stroke;
+    uniform float u_stroke_width;
+
+    void main() {
+      float eps = 0.01;
+  
+      //round marks
+      vec2 pointCoord = (gl_PointCoord.xy-0.5)*2.0;
+      float dist = length(pointCoord); // distance to point center, normalized to [0,1]
+      if (dist>1.0-eps) discard;
+      gl_FragColor = v_color;
+      if (v_size > 6.0){ //border color if marker size > 2.0
+        float stroke = u_stroke_width / v_size; //normalized stroke width
+        gl_FragColor = mix(
+          v_color, 
+          vec4(u_stroke, 1.0), 
+          smoothstep(1.0-stroke-eps, 1.0-stroke+eps, dist)
+        );
+      }
+    }`;
+
+    let render_func = regl({
+        attributes: {
+            position: regl.prop("positions"),
+            color: regl.prop("colors"),
+            size: regl.prop("size"),
+            depth: regl.prop("depth"),
+        },
+        uniforms: {
+            u_stroke: regl.prop("stroke"),
+            u_stroke_width: regl.prop("stroke_width"),
+        },
+        count: regl.prop("count"),
+        primitive: "points",
+        vert,
+        frag,
+    });
+
+    return render_func;
+}
+
+export function scatter_frame(
+    container = undefined,
+    data = undefined,
+    {
+        background = "#eee",
+        xticks = 5,
+        yticks = 5,
+        x_tickvalues = undefined,
+        y_tickvalues = undefined,
+        x = (d) => d.x,
+        y = (d) => d.y,
+        scales = {},
+        width = 500,
+        height = 500,
+        padding_bottom = 18,
+        padding_left = 40,
+        padding_right = 0,
+        padding_top = 0,
+        pad = 0.1,
+        title = undefined,
+        is_square_scale = false,
+        is_log_scale = false,
+        xlabel = undefined,
+        ylabel = undefined,
+        label_fontsize = 12,
+    } = {},
+) {
+    if (container === undefined) {
+        container = create_svg(width, height);
+    }
+    container.call(frame, data, {
+        background,
+        xticks,
+        yticks,
+        x_tickvalues,
+        y_tickvalues,
+        x,
+        y,
+        scales,
+        width,
+        height,
+        padding_bottom,
+        padding_left,
+        padding_right,
+        padding_top,
+        pad,
+        title,
+        is_square_scale,
+        is_log_scale,
+        xlabel,
+        ylabel,
+        label_fontsize,
+    });
+
+    let return_node = container.node();
+    return_node.scales = container.scales;
+    return return_node;
+}
+
+export function color2gl(color) {
+    let c = d3.rgb(d3.color(color));
+    return [c.r / 255, c.g / 255, c.b / 255];
+}
+
+export function create_canvas(width, height) {
+    let canvas = document.createElement("canvas");
+    canvas.width = width * window.devicePixelRatio;
+    canvas.height = height * window.devicePixelRatio;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    return canvas;
+}
+
+export function splom_gl2( //WIP version 2, single gl canvas
+    container_div = undefined,
+    data = undefined,
+    {
+        width = 800,
+        height = 800,
+        attrs = ["column_a", "column_b", "column_c"], //list of keys in data
+
+        depth = undefined, //(d) => 0.0,
+        //Show histogram on the diagonal or not.
+        //Currently, this only affects the layout and plotting histogram is not supported yet
+        // histogram = false, //TODO
+        layout = "both", //'lower', 'upper' or 'both'
+
+        // margin_left = 600,
+        padding_left = 2,
+        padding_right = 2,
+        padding_bottom = 2,
+        padding_top = 2,
+        wspace = 0.01, //The amount of width reserved for space between subplots. Similar to pyplot
+        hspace = 0.01,
+
+        //x and y axes
+        scales = { sc: undefined }, // todo: flexible for individual subplots
+        is_square_scale = false,
+        is_log_scale = false,
+        xticks = 5,
+        yticks = 5,
+
+        //color styles,
+        s = () => 5, //mark size,
+        stroke = "#eee",
+        stroke_width = 1,
+        //todo:
+        //fill
+        //cmap
+        //c
+
+        //texts
+        label_fontsize = 10,
+    } = {},
+) {
+    let n_attrs = attrs.length;
+    let plot_width, plot_height;
+    // if (histogram || layout === "both") {
+    plot_width = (width - padding_left - padding_right) / n_attrs;
+    plot_height = (height - padding_top - padding_bottom) / n_attrs;
+    // } else {
+    //   plot_width = (width - padding_left - padding_right) / (n_attrs - 1);
+    //   plot_height = (height - padding_top - padding_bottom) / (n_attrs - 1);
+    // }
+
+    if (depth === undefined) {
+        //by default, last point gets drawn on the top
+        depth = (d, i) => -i / data.length;
+    }
+
+    //DOM layout:
+    // <div> container_div
+    // - <div> frame_container
+    //    - <svg> subplot frames
+    //    - ...
+    // - <canvas> BIG ASS gl canvas
+    // - overlay_container (div)
+    //     - overlays for brushes, arrows (svg)
+    if (container_div === undefined) {
+        container_div = d3.create("div").style("height", `${height}px`);
+    }
+    let frame_container = container_div
+        .append("div")
+        .attr("class", "frame-container")
+        .style("position", "relative");
+
+    //create a canvas, gl, with render functionality
+    let canvas = create_canvas(width, height);
+    let regl = regl2({ canvas: canvas });
+    d3.select(canvas).style("position", "absolute");
+    container_div.node().appendChild(canvas);
+
+    let overlay_container = container_div
+        .append("div")
+        .attr("class", "overlay-container");
+
+    let _render = create_scatter_gl_program(regl);
+
+    function draw_subplots() {
+        regl.clear({
+            color: [0, 0, 0, 0],
+            depth: 1,
+            stencil: 0,
+        });
+
+        let subplots = d3.range(n_attrs).map((_) => []);
+        for (let i = 0; i < n_attrs; i++) {
+            for (let j = 0; j < n_attrs; j++) {
+                if (
+                    (layout === "lower" && i > j) ||
+                    (layout === "upper" && i < j)
+                ) {
+                    continue;
+                }
+
+                //subplot background frame
+                let frame = scatter_frame(undefined, data, {
+                    x: (d) => d[attrs[j]],
+                    y: (d) => d[attrs[i]],
+                    width: plot_width,
+                    height: plot_height,
+                    xlabel: attrs[j],
+                    ylabel: attrs[i],
+                    is_square_scale,
+                    xticks: xticks,
+                    yticks: yticks,
+                    padding_top,
+                    padding_bottom,
+                    padding_left,
+                    padding_right,
+                    title: "",
+                    label_fontsize,
+                });
+                //compute offset on the big gl canvas pixel coordinate
+                let left = padding_left + j * plot_width;
+                let top = padding_top + (n_attrs - 1 - i) * plot_height;
+                d3.select(frame)
+                    .attr("class", "frame")
+                    .style("position", "absolute")
+                    .style("left", `${left}px`)
+                    .style("top", `${top}px`);
+                frame_container.node().appendChild(frame);
+
+                //TODO histogram on the diagonal subplots
+                if (i == j) {
+                    //histogram
+                } else {
+                    // gl render here
+                    let { sx, sy } = frame.scales; //updated sx, sy;
+                    let pixel2clip_x = d3
+                        .scaleLinear()
+                        .domain([0, width])
+                        .range([-1, 1]);
+                    let pixel2clip_y = d3
+                        .scaleLinear()
+                        .domain([0, height])
+                        .range([1, -1]);
+                    // From data to clip space
+                    let sx_gl = d3
+                        .scaleLinear()
+                        .domain(sx.domain())
+                        .range([
+                            pixel2clip_x(sx.range()[0] + left),
+                            pixel2clip_x(sx.range()[1] + left),
+                        ]);
+                    let sy_gl = d3
+                        .scaleLinear()
+                        .domain(sy.domain())
+                        .range([
+                            pixel2clip_y(sy.range()[0] + top),
+                            pixel2clip_y(sy.range()[1] + top),
+                        ]);
+                    let sc = scales.sc || ((d) => C[0]);
+                    let sc_gl = (d) => {
+                        let c = sc(d);
+                        return [...color2gl(c), 1.0];
+                    };
+                    _render({
+                        positions: data.map((d) => [
+                            sx_gl(d[attrs[j]]),
+                            sy_gl(d[attrs[i]]),
+                        ]),
+                        colors: data.map((d) => sc_gl(d)),
+                        count: data.length,
+                        size: data.map(
+                            (d, i) => s(d, i) * window.devicePixelRatio,
+                        ),
+                        stroke: color2gl(stroke),
+                        stroke_width: stroke_width * window.devicePixelRatio,
+                        depth: data.map((d, i) => depth(d, i)),
+                    });
+
+                    //create subplot overlay
+                    let overlay_ij = create_svg(plot_width, plot_height)
+                        .attr("class", "overlay")
+                        .style("position", "absolute")
+                        .style("left", `${padding_left + j * plot_width}px`)
+                        .style(
+                            "top",
+                            `${padding_top + (n_attrs - 1 - i) * plot_height}px`,
+                        );
+                    overlay_container.node().appendChild(overlay_ij.node());
+
+                    // let { sx, sy } = sca.scales;
+                    let plot = {};
+                    plot.data = data;
+                    plot.x = (d) => d[attrs[j]];
+                    plot.y = (d) => d[attrs[i]];
+                    plot.frame = frame;
+                    plot.overlay = overlay_ij;
+
+                    plot.scales = {
+                        sx: frame.scales.sx,
+                        sy: frame.scales.sy,
+                        sc: scales.sc,
+                        sx_gl,
+                        sy_gl,
+                        sc_gl,
+                    };
+                    plot.render = (data, {} = {}) => {
+                        _render({
+                            positions: data.map((d) => [
+                                sx_gl(d[attrs[j]]),
+                                sy_gl(d[attrs[i]]),
+                            ]),
+                            colors: data.map((d) => sc_gl(d)),
+                            count: data.length,
+                            size: data.map(
+                                (d, i) => s(d, i) * window.devicePixelRatio,
+                            ),
+                            stroke: color2gl(stroke),
+                            stroke_width:
+                                stroke_width * window.devicePixelRatio,
+                            depth: data.map((d, i) => depth(d, i)),
+                        });
+                    };
+
+                    plot.recolor = (colors, { depths } = {}) => {
+                        _render({
+                            positions: data.map((d) => [
+                                sx_gl(d[attrs[j]]),
+                                sy_gl(d[attrs[i]]),
+                            ]),
+                            colors: colors,
+                            count: data.length,
+                            size: data.map(
+                                (d, i) => s(d, i) * window.devicePixelRatio,
+                            ),
+                            stroke: color2gl(stroke),
+                            stroke_width:
+                                stroke_width * window.devicePixelRatio,
+                            depth: depths || data.map((d, i) => depth(d, i)),
+                        });
+                    };
+
+                    subplots[i][j] = plot;
+                }
+            }
+        }
+        return subplots;
+    }
+
+    //prepare return
+    let return_node = container_div.node();
+    return_node.data = data;
+    return_node.subplots = draw_subplots();
+    return_node.clear = () => {
+        // regl._gl.clearColor(0, 0, 0, 1);
+        regl.clear({
+            color: [0, 0, 0, 0],
+            depth: 1,
+            stencil: 0,
+        });
+    };
+    return_node.recolor = (colors, { depths } = {}) => {
+        return_node.clear();
+        return_node.subplots.flat().forEach((subplot, i) => {
+            if (subplot !== undefined) {
+                subplot.recolor(colors, { depths: depths });
+            }
+        });
+    };
+
+    // return_node.render = ({
+    //   positions,
+    //   colors,
+    //   size,
+    //   stroke,
+    //   stroke_width,
+    //   depth
+    // } = {}) => {
+    //   //e.g., depth = positions.map((d, i) => -i / positions.length);
+    //   return_node._render({
+    //     positions: positions.map((d) => [sx_gl(d[0]), sy_gl(d[1])]),
+    //     colors,
+    //     count: positions.length,
+    //     size: size.map((s) => s * window.devicePixelRatio),
+    //     stroke,
+    //     stroke_width: stroke_width * window.devicePixelRatio,
+    //     depth
+    //   });
+    // };
+    // return_node.redraw = (data) => {
+    //   return_node.render({
+    //     positions: data.map((d) => [x(d), y(d)]), //array of two numbers
+    //     colors: data.map((d) => sc_gl(d)), // array of RGBA tuples
+    //     size: data.map((d) => s(d)) // array of numbers
+    //   });
+    // };
+
+    return return_node;
+}
+
 export function overflow_box(node, height, width = undefined) {
     let wrapping_div = d3
         .create("div")

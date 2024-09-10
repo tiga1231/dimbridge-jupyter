@@ -1,4 +1,36 @@
-import * as d3 from "https://esm.sh/d3@7";
+import * as d3 from "d3";
+
+import {
+    make_frame,
+    make_sub_frame,
+    make_bridge_frame,
+} from "../lib/fancy-frames.js";
+
+import {
+    C,
+    reshape,
+    create_svg,
+    linspace,
+    zip,
+    scatter,
+    overflow_box,
+    splom_gl2,
+    create_canvas,
+} from "../lib.js";
+
+import {
+    // define_arrowhead,
+    // compute_predicates,
+    // update_brush_history,
+    // clear_selected,
+    // set_selected,
+    // set_selected2,
+    // get_selected,
+    // update_point_style,
+    // draw_boxes,
+    // set_pred,
+    get_point_style,
+} from "./view-utils.js";
 
 export default class SplomView {
     constructor(data, controller, config) {
@@ -22,6 +54,9 @@ export default class SplomView {
             scatter_padding,
             gap,
             predicate_view_subplot_height,
+            margin_outer,
+            margin_inner,
+            splom_mark_size,
         } = this.config;
 
         let n_boxes = 1;
@@ -32,8 +67,6 @@ export default class SplomView {
         this.plot_height = width * scatter_height + 2.6 * font_size;
 
         // controls padding in svg for the frames
-        let margin_outer = margin_outer;
-        let margin_inner = margin_inner;
         //controls how frames are spaced
         let margin_left = margin_inner;
         let margin_top = margin_inner;
@@ -90,8 +123,6 @@ export default class SplomView {
     }
 
     draw(splom_attributes) {
-        return; //TODO continue
-        //DUMMY
         // let { n_boxes, predicates } = projection_view.value;
         let n_boxes = 1;
         let predicates = [];
@@ -122,10 +153,10 @@ export default class SplomView {
             padding_right: this.padding_right,
             padding_bottom: this.padding_bottom,
             padding_top: this.padding_top,
-            layout: "both", //'upper', 'lower', or 'both',
+            layout: "lower", //'upper', 'lower', or 'both',
             width: this.plot_width,
             height: this.plot_width,
-            s: (d) => splom_mark_size, //size of circle marks
+            s: (d) => this.config.splom_mark_size, //size of circle marks
             attrs: splom_attributes,
             x_tickvalues: linspace(0, 1, 4),
             ticks: 3,

@@ -1,5 +1,5 @@
 // third party
-import * as d3 from "https://esm.sh/d3@7";
+import * as d3 from "d3";
 import numeric from "https://cdn.skypack.dev/numeric@1.2.6?min";
 import math from "./lib/math.js";
 
@@ -34,13 +34,15 @@ let config = {
     font_size: 16,
     gap: 10,
 
-    width: 1000,
+    width: 900,
     scatter_padding: 2,
     scatter_width: 0.4,
     scatter_height: 0.4,
 
     predicate_view_subplot_height: 20,
     predicate_view_fontsize: 14,
+
+    splom_mark_size: 2,
 };
 
 // widget
@@ -51,9 +53,12 @@ function cleanup() {
 
 export default {
     initialize({ model }) {
-        console.log("dimbridge widget init");
-        cell_width = d3.select(".jp-OutputArea-output").style("width");
-        console.log("output width", cell_width);
+        console.log("DimBridge widget init");
+        let cell = d3.selectAll(".jp-OutputArea-output");
+        let cell_width = parseFloat(cell.style("width")) || 1000;
+        console.log("Jupyter output cell width", cell_width);
+        //set the dimbridge width to be Jupyter notebook cell width
+        config.width = cell_width - 18; //leave some space for shadow
     },
 
     render({ model, el }) {
@@ -83,17 +88,20 @@ export default {
         // tell controller to manage between-view interactions
         controller.add_views(projection_view, predicate_view, splom_view);
 
-        ////add margins between view components
+        // add margins between view components
         d3.select(projection_view.node).style(
             "margin-right",
             `${config.gap}px`,
         );
         d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
-        ////return main view
+
+        // return main view
         let return_node = flexbox(
             [projection_view.node, predicate_view.node, splom_view.node],
             width,
         );
+        d3.select(return_node).style("padding", "8px"); // give some space for shadow effects
+
         el.appendChild(return_node);
         // set_value(return_node, { projection_view, predicate_view, splom_view });
         return cleanup;
@@ -184,4 +192,4 @@ export default {
         //    // widget.send({ "type": "my-event", "foo": "bar" })
         //});
     },
-}; // end of export defailt
+}; // end of export defalt
