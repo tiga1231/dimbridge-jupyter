@@ -60,7 +60,6 @@ export default class SplomView {
         } = this.config;
 
         let n_boxes = 1;
-
         //gap between subplots in splot, measured in proportion (0 to 1) to the size of a subplot
         let splom_spacing = 0.03;
         this.plot_width = width * scatter_width - gap; //width of main scatter plot and SPLOM
@@ -84,6 +83,7 @@ export default class SplomView {
             .style("height", `${this.plot_height}px`)
             .style("position", "relative");
 
+        this.predicate_mode = "data extent"; //TODO FIXME later
         let color_mode =
             n_boxes == 1 && this.predicate_mode !== "data extent"
                 ? "confusion"
