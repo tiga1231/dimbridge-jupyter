@@ -40,6 +40,7 @@ class Dimbridge(anywidget.AnyWidget):
     _css = pathlib.Path(__file__).parent / "static" / "widget.css"
 
     # input attributes
+    # .tag(sync=True) is required by AnyWidget to have them in sync with the JavaScript model
     data = Instance(pd.DataFrame).tag(sync=True, to_json=pandas2json)
     x = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)
     y = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)

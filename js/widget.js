@@ -6,21 +6,12 @@ import math from "./lib/math.js";
 // custom
 import "./widget.css";
 import * as lib from "./lib.js";
-import {
-    C,
-    reshape,
-    create_svg,
-    linspace,
-    zip,
-    flexbox,
-    numpy2array,
-    pandas2array,
-} from "./lib.js";
+import {C, reshape, create_svg, linspace, zip, flexbox, numpy2array, pandas2array} from "./lib.js";
 
 import ProjectionView from "./views/ProjectionView.js";
 import PredicateView from "./views/PredicateView.js";
 import SplomView from "./views/SplomView.js";
-import { InteractionController } from "./controller.js";
+import {InteractionController} from "./controller.js";
 
 // ----------- View Components ------------
 // --------------- Widget -----------------
@@ -29,167 +20,163 @@ let cell_width;
 
 // layout config
 let config = {
-    margin_outer: 10,
-    margin_inner: 4,
-    font_size: 16,
-    gap: 10,
+  margin_outer: 10,
+  margin_inner: 4,
+  font_size: 16,
+  gap: 10,
 
-    width: 900,
-    scatter_padding: 2,
-    scatter_width: 0.4,
-    scatter_height: 0.4,
+  width: 900,
+  scatter_padding: 2,
+  scatter_width: 0.4,
+  scatter_height: 0.4,
 
-    predicate_view_subplot_height: 20,
-    predicate_view_fontsize: 14,
+  predicate_view_subplot_height: 20,
+  predicate_view_fontsize: 14,
 
-    splom_mark_size: 2,
+  splom_mark_size: 2,
 };
 
 // widget
 function cleanup() {
-    // Optional. Cleanup callback.
-    // Executed any time the view is removed from the DOM
+  // Optional. Cleanup callback.
+  // Executed any time the view is removed from the DOM
 }
 
 export default {
-    initialize({ model }) {
-        console.log("DimBridge widget init");
-        let cell = d3.selectAll(".jp-OutputArea-output");
-        let cell_width = parseFloat(cell.style("width")) || 1000;
-        console.log("Jupyter output cell width", cell_width);
-        //set the dimbridge width to be Jupyter notebook cell width
-        config.width = cell_width - 18; //leave some space for shadow
-    },
+  initialize({model}) {
+    console.log("DimBridge widget init");
+    let cell = d3.selectAll(".jp-OutputArea-output");
+    let cell_width = parseFloat(cell.style("width")) || 1000;
+    console.log("Jupyter output cell width", cell_width);
+    //set the dimbridge width to be Jupyter notebook cell width
+    config.width = cell_width - 18; //leave some space for shadow
+  },
 
-    render({ model, el }) {
-        let width = cell_width;
-        console.log("MODEL", model);
-        console.log("EL", el);
+  render({model, el}) {
+    let width = cell_width;
+    console.log("MODEL", model);
+    console.log("EL", el);
 
-        //get data from python
-        let data = pandas2array(model.get("data"));
-        let x = numpy2array(model.get("x"));
-        let y = numpy2array(model.get("y"));
+    //get data from python
+    let data = pandas2array(model.get("data"));
+    let x = numpy2array(model.get("x"));
+    let y = numpy2array(model.get("y"));
 
-        //init controller
-        let controller = new InteractionController();
+    //init controller
+    let controller = new InteractionController();
 
-        //init views
-        let projection_view = new ProjectionView(
-            data,
-            { x, y },
-            controller,
-            config,
-        );
-        let predicate_view = new PredicateView(data, controller, config);
-        // let splom_view = { node: create_svg().node(), draw: () => {} }; //dummy view
-        let splom_view = new SplomView(data, controller, config);
+    //init views
+    let projection_view = new ProjectionView(data, {x, y}, controller, config);
+    let predicate_view = new PredicateView(data, controller, config);
+    // let splom_view = { node: create_svg().node(), draw: () => {} }; //dummy view
+    let splom_view = new SplomView(data, controller, config);
 
-        // tell controller to manage between-view interactions
-        controller.add_views(projection_view, predicate_view, splom_view);
+    // tell controller to manage between-view interactions
+    controller.add_views(projection_view, predicate_view, splom_view);
 
-        // add margins between view components
-        d3.select(projection_view.node).style(
-            "margin-right",
-            `${config.gap}px`,
-        );
-        d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
+    // add margins between view components
+    d3.select(projection_view.node).style("margin-right", `${config.gap}px`);
+    d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
 
-        // return main view
-        let return_node = flexbox(
-            [projection_view.node, predicate_view.node, splom_view.node],
-            width,
-        );
-        d3.select(return_node).style("padding", "8px"); // give some space for shadow effects
+    // return main view
+    let return_node = flexbox(
+      [
+        projection_view.node,
+        predicate_view.node,
+        splom_view.node, //
+      ],
+      width,
+    );
+    d3.select(return_node).style("padding", "8px"); // give some space for shadow effects
 
-        el.appendChild(return_node);
-        // set_value(return_node, { projection_view, predicate_view, splom_view });
-        return cleanup;
+    el.appendChild(return_node);
+    // set_value(return_node, { projection_view, predicate_view, splom_view });
+    return cleanup;
 
-        //// get plot data
-        //let c = numpy2array(model.get("c")); // color
-        //let s = numpy2array(model.get("s")); // mark size
+    //// get plot data
+    //let c = numpy2array(model.get("c")); // color
+    //let s = numpy2array(model.get("s")); // mark size
 
-        //// style data
-        //let width = model.get("width");
-        //let height = model.get("height");
-        //let xticks = model.get("xticks");
-        //let yticks = model.get("yticks");
-        //let xlabel = model.get("xlabel");
-        //let ylabel = model.get("ylabel");
-        //let title = model.get("title");
-        //let square_scale = model.get("square_scale");
+    //// style data
+    //let width = model.get("width");
+    //let height = model.get("height");
+    //let xticks = model.get("xticks");
+    //let yticks = model.get("yticks");
+    //let xlabel = model.get("xlabel");
+    //let ylabel = model.get("ylabel");
+    //let title = model.get("title");
+    //let square_scale = model.get("square_scale");
 
-        //// append DOM
-        //let svg = create_svg(width, height);
-        //el.appendChild(svg.node());
+    //// append DOM
+    //let svg = create_svg(width, height);
+    //el.appendChild(svg.node());
 
-        //let scatter_data = d3
-        //    .range(x.length)
-        //    .map((i) => ({ index: i, x: x[i], y: y[i], c: c[i] }));
+    //let scatter_data = d3
+    //    .range(x.length)
+    //    .map((i) => ({ index: i, x: x[i], y: y[i], c: c[i] }));
 
-        ////color scale
-        //let sc;
-        //if (model.get("c").dtype.includes("int")) {
-        //    //discrete color scale
-        //    sc = (d, i) => C[c[i]];
-        //} else {
-        //    //continuous color scale
-        //    let vmin = math.min(c);
-        //    let vmax = math.max(c);
-        //    let vdiff = vmax - vmin;
-        //    sc = (d, i) => d3.interpolateViridis((d.c - vmin) / vdiff);
-        //}
+    ////color scale
+    //let sc;
+    //if (model.get("c").dtype.includes("int")) {
+    //    //discrete color scale
+    //    sc = (d, i) => C[c[i]];
+    //} else {
+    //    //continuous color scale
+    //    let vmin = math.min(c);
+    //    let vmax = math.max(c);
+    //    let vdiff = vmax - vmin;
+    //    sc = (d, i) => d3.interpolateViridis((d.c - vmin) / vdiff);
+    //}
 
-        //// draw
-        //let sca = lib.scatter(svg, scatter_data, {
-        //    x: (d) => d.x,
-        //    y: (d) => d.y,
-        //    label_fontsize: 14,
-        //    padding_top: 14 * 2,
-        //    title: title,
-        //    xlabel: xlabel,
-        //    ylabel: ylabel,
-        //    width: width,
-        //    height: height,
-        //    s: (d, i) => s[i],
+    //// draw
+    //let sca = lib.scatter(svg, scatter_data, {
+    //    x: (d) => d.x,
+    //    y: (d) => d.y,
+    //    label_fontsize: 14,
+    //    padding_top: 14 * 2,
+    //    title: title,
+    //    xlabel: xlabel,
+    //    ylabel: ylabel,
+    //    width: width,
+    //    height: height,
+    //    s: (d, i) => s[i],
 
-        //    xticks: xticks,
-        //    yticks: yticks,
-        //    // x_tickvalues: linspace(0, 1, 4),
+    //    xticks: xticks,
+    //    yticks: yticks,
+    //    // x_tickvalues: linspace(0, 1, 4),
 
-        //    scales: { sc: sc },
-        //    is_square_scale: square_scale,
-        //    brush: true,
-        //    brush_highlight: true,
-        //    brush_listeners: {
-        //        brush: (brushed_data1) => {},
-        //        end: (brushed_data1) => {
-        //            console.log("brush end", brushed_data1);
-        //            //update selection attr
-        //            model.set(
-        //                "selected",
-        //                brushed_data1.map((d) => d.index),
-        //            );
-        //            model.set("new_value", 13);
-        //            model.save_changes();
-        //        },
-        //    },
-        //});
+    //    scales: { sc: sc },
+    //    is_square_scale: square_scale,
+    //    brush: true,
+    //    brush_highlight: true,
+    //    brush_listeners: {
+    //        brush: (brushed_data1) => {},
+    //        end: (brushed_data1) => {
+    //            console.log("brush end", brushed_data1);
+    //            //update selection attr
+    //            model.set(
+    //                "selected",
+    //                brushed_data1.map((d) => d.index),
+    //            );
+    //            model.set("new_value", 13);
+    //            model.save_changes();
+    //        },
+    //    },
+    //});
 
-        //model.on("change:x", function () {
-        //    console.log(arguments);
+    //model.on("change:x", function () {
+    //    console.log(arguments);
 
-        //    // callback of x value change
-        //    let new_x = model.get("x");
-        //    data.forEach((d, i) => (d[0] = new_x[i]));
-        //    sca.update_position(data);
-        //});
+    //    // callback of x value change
+    //    let new_x = model.get("x");
+    //    data.forEach((d, i) => (d[0] = new_x[i]));
+    //    sca.update_position(data);
+    //});
 
-        //model.on("msg:custom", (msg) => {
-        //    // custom message handling from python's
-        //    console.log("custom msg", msg);
-        //    // widget.send({ "type": "my-event", "foo": "bar" })
-        //});
-    },
+    //model.on("msg:custom", (msg) => {
+    //    // custom message handling from python's
+    //    console.log("custom msg", msg);
+    //    // widget.send({ "type": "my-event", "foo": "bar" })
+    //});
+  },
 }; // end of export defalt
