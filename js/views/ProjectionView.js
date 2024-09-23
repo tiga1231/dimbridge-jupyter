@@ -11,7 +11,7 @@ import {
   set_selected,
   set_selected2,
   get_selected,
-  update_point_style,
+  update_point_style_gl,
   draw_boxes,
   set_pred,
 } from "./view-utils.js";
@@ -43,7 +43,8 @@ export default class ProjectionView {
 
     this.cf = this.init_crossfilter(data);
     this.node = this.init_node();
-    this.node = this.draw();
+    console.log(this.node, "NODE");
+    this.draw();
     this.brush = this.init_brush();
     this.brush_mode = "single"; //TODO support "contrustive" and "curve"
     this.predicate_mode = "data extent"; // TODO "predicate regression"
@@ -81,17 +82,18 @@ export default class ProjectionView {
     this.padding_bottom = scatter_padding;
     this.padding_top = font_size * 1.6 + scatter_padding;
 
-    this.svg = d3
+    this.fancy_frame = d3
       .create("svg")
       .attr("width", this.plot_width) //give enough margin for frame shadow
       .attr("height", this.plot_height)
       .style("overflow", "visible");
-    define_arrowhead(this.svg);
 
-    let return_node = this.svg.node();
+    let return_node = d3.create("div").node();
+    return_node.appendChild(this.fancy_frame.node());
+    // let return_node = this.fancy_frame.node();
     // set_value(return_node, {}); //initial empty value
 
-    this.projection_g = this.svg.append("g");
+    this.projection_g = this.fancy_frame.append("g");
     make_frame(
       this.projection_g,
       0,
@@ -102,7 +104,6 @@ export default class ProjectionView {
       font_size,
       true,
     );
-    // return_node = this.draw();
     return return_node;
   }
 
@@ -112,8 +113,8 @@ export default class ProjectionView {
     this.sca = scatter_gl(d3.select(this.node), data, {
       x: (d, i) => this.x[i],
       y: (d, i) => this.y[i],
-      s: (d) => 10,
-      stroke_width: 1,
+      s: (d) => 6,
+      stroke_width: 1.5,
       width: this.plot_width,
       height: this.plot_height,
       padding_left: this.padding_left,
@@ -124,6 +125,7 @@ export default class ProjectionView {
       is_square_scale: false,
     });
     this.sca.overlay.selectAll(".tick text").remove(); // remove tick marks as dim-reduction axes are arbitrary
+    define_arrowhead(this.sca.overlay);
     return this.sca;
   }
 
@@ -132,8 +134,8 @@ export default class ProjectionView {
     this.n_boxes = 1;
     this.full_brush_history = [];
     this.sample_brush_history = [];
-    this.g_brush = this.svg.append("g").attr("class", "brush");
-    this.g_brush_path = this.svg.append("g"); // arrow drawn for contrastive and curve brush
+    this.g_brush = this.sca.overlay.append("g").attr("class", "brush");
+    this.g_brush_path = this.sca.overlay.append("g"); // arrow drawn for contrastive and curve brush
 
     //bounding box of the plot rectangle in the svg, in pixels
     let plot_extent_x = [this.padding_left, this.plot_width - this.padding_right];
@@ -219,7 +221,8 @@ export default class ProjectionView {
     );
 
     if (this.n_boxes == 1 && this.predicate_mode === "data extent") {
-      update_point_style(this.sca, "selection");
+      // update_point_style(this.sca, "selection");
+      update_point_style_gl(this.sca, "selection");
     }
 
     //draw fancy brush stroke (arrow, and shaded stroke)
@@ -264,7 +267,7 @@ export default class ProjectionView {
         //Color scatter plot points by false positives, false negatives, etc.
         let last_predicate = predicates[predicates.length - 1];
         set_pred(this.data, last_predicate);
-        update_point_style(this.sca, "selection");
+        update_point_style_gl(this.sca, "selection");
       }
 
       console.log("projection view updating other views...");
@@ -292,7 +295,8 @@ export default class ProjectionView {
     }
 
     // optionally, remove brush bounding boxes (bboxes)
-    this.sca.selectAll(".bbox").remove();
+    // TODO FIXME
+    this.sca.overlay.selectAll(".bbox").remove();
 
     if (this.n_boxes > 1 && event.mode === "drag") {
       //hide brush
@@ -320,17 +324,17 @@ export default class ProjectionView {
 
       if (this.n_boxes == 1) {
         if (this.predicate_mode === "data extent") {
-          update_point_style(this.sca, "selection");
+          update_point_style_gl(this.sca, "selection");
         } else {
           //color points by false netagivity, false postivity, etc.
-          update_point_style(this.sca, "confusion");
+          update_point_style_gl(this.sca, "confusion");
         }
       } else if (this.n_boxes == 2) {
         //color two sets of points by 2 brush boxes
-        update_point_style(this.sca, "contrastive");
+        update_point_style_gl(this.sca, "contrastive");
       } else {
         //highligh all selected points by brush curve
-        update_point_style(this.sca, "selection");
+        update_point_style_gl(this.sca, "selection");
       }
 
       //update other views

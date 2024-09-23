@@ -264,15 +264,18 @@ export function create_canvas(width, height, dpi_scale = 1.0) {
   return canvas;
 }
 
-export function overlay(nodes) {
+export function overlay(container = undefined, nodes = []) {
   /*
     Take a list of DOM nodes.
     return a div, with children following the <selections> order.
     Following the HTML convention, later children are overlaid on top of early children.
   */
-  let container = d3.create("div");
-  // .style("position", "relative");
+  if (container === undefined) {
+    container = d3.create("div");
+  }
+  container.style("position", "relative");
 
+  nodes = [...container.node().children, ...nodes];
   let container_height = 0;
   nodes.forEach((node, i) => {
     let sel = d3.select(node);
@@ -330,12 +333,16 @@ export function scatter_gl(
     //by default, last point gets drawn on the top
     depth = (d, i) => -i / data.length;
   }
-
-  let overlay2 = create_svg(width, height);
   if (container === undefined) {
-    container = create_svg(width, height);
+    container = d3.create("div");
   }
-  container.call(frame, data, {
+
+  // underlay;
+  // canvas;
+  // overlay;
+  let underlay = create_svg(width, height);
+  let overlay1 = create_svg(width, height);
+  underlay.call(frame, data, {
     background,
     xticks,
     yticks,
@@ -360,12 +367,12 @@ export function scatter_gl(
   });
 
   if (!is_framed) {
-    container.selectAll(".scatter").remove();
+    underlay.selectAll(".scatter").remove();
   }
 
   // Scales
   // From data to pixel coords on svg;
-  let {sx, sy} = container.scales;
+  let {sx, sy} = underlay.scales;
   //From pixels to GL's clip space
   let sx_svg2gl = d3.scaleLinear().domain([0, width]).range([-1, 1]);
   let sy_svg2gl = d3.scaleLinear().domain([0, height]).range([1, -1]);
@@ -389,11 +396,11 @@ export function scatter_gl(
   let regl = regl2({canvas: canvas});
 
   // let res = d3.select(canvas);
-  let res = overlay([container.node(), canvas, overlay2.node()]);
+  let res = overlay(container, [underlay.node(), canvas, overlay1.node()]);
   //method defs
-  res.overlay = container; //the svg/g overlay
-  res.overlay2 = overlay2;
-  res.scales = {...container.scales, sx_gl, sy_gl, sc_gl};
+  res.underlay = underlay;
+  res.overlay = overlay1;
+  res.scales = {...underlay.scales, sx_gl, sy_gl, sc_gl};
   res.clear = () => {
     // regl._gl.clearColor(0, 0, 0, 1);
     regl.clear({
@@ -441,13 +448,11 @@ export function splom_gl2( //WIP version 2, single gl canvas
     width = 800,
     height = 800,
     attrs = ["column_a", "column_b", "column_c"], //list of keys in data
-
     depth = undefined, //(d) => 0.0,
     //Show histogram on the diagonal or not.
     //Currently, this only affects the layout and plotting histogram is not supported yet
     // histogram = false, //TODO
     layout = "both", //'lower', 'upper' or 'both'
-
     // margin_left = 600,
     padding_left = 2,
     padding_right = 2,
@@ -758,7 +763,6 @@ export function scatter(
     // plots = [],
     s = (d, i) => 10, //marker size
     return_obj = "g",
-    // brush = false,
     title = undefined,
     is_square_scale = false,
     is_log_scale = false,
