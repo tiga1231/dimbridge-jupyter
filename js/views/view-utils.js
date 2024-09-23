@@ -175,6 +175,7 @@ export function update_point_style_gl(sca_gl, mode = "confusion") {
     return;
     let style = get_point_style(mode);
     sca_gl.update_style(style);
+    this.sc = (d, i) => style(d, i).fill;
     //raise
     // sca
     //   .selectAll(".point")

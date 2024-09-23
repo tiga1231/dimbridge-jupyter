@@ -18,15 +18,16 @@ import {
 } from "../lib.js";
 
 import {
-    define_arrowhead,
-    update_brush_history,
     clear_selected,
+    define_arrowhead,
+    draw_boxes,
+    get_point_style,
+    get_selected,
+    set_pred,
     set_selected,
     set_selected2,
-    get_selected,
+    update_brush_history,
     update_point_style_gl,
-    draw_boxes,
-    set_pred,
 } from "./view-utils.js";
 
 import {compute_predicates} from "../PredicateEngine.js";
@@ -127,7 +128,9 @@ export default class ProjectionView {
 
     draw() {
         let data = this.data;
-        let sc = (d) => d3.schemeCategory10[0]; //TODO variable me
+        // let sc = (d) => d3.schemeCategory10[1]; //TODO variable me
+        let style = get_point_style("selection");
+        let sc = (d, i) => style(d, i).fill;
         this.sca = scatter_gl(d3.select(this.node), data, {
             x: (d, i) => this.x[i],
             y: (d, i) => this.y[i],
@@ -222,12 +225,12 @@ export default class ProjectionView {
         );
 
         //grab selection
-        let brushed_region;
-        brushed_region = this.get_brushed_region(
+        let brushed_region = this.get_brushed_region(
             event.selection,
             this.sca.scales.sx,
             this.sca.scales.sy,
         );
+
         this.sample_brush_history = update_brush_history(
             this.full_brush_history,
             brushed_region,
@@ -284,6 +287,7 @@ export default class ProjectionView {
                 d.x = this.x[i];
                 d.y = this.y[i];
             });
+
             let {predicates, attributes, qualities} = await compute_predicates(
                 this.data,
                 this.full_brush_history,
