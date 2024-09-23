@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import { get_selected, subsample } from "./views/view-utils.js";
+import {get_selected, subsample} from "./views/view-utils.js";
 
 function data_extent_predicate(data, selected, attributes) {
     //From brush data, produce predicates derived base on data extent only.
@@ -31,11 +31,11 @@ export async function compute_predicates(
     n_boxes,
     predicate_mode,
     manual_attributes = ["d1", "d2", "d3", "d4"],
-    { x, y } = {},
+    {x, y} = {},
 ) {
     full_brush_history = full_brush_history.filter((brush_data) => {
         //filter and consider non-empty brushes only
-        let selected = get_selected(data, brush_data, { x, y });
+        let selected = get_selected(data, brush_data, {x, y});
         return d3.sum(selected) > 0;
     });
     if (full_brush_history.length === 0) {
@@ -48,17 +48,17 @@ export async function compute_predicates(
         let attributes = manual_attributes;
         // let selected_data = data.filter((d, i) => selected[i]);
         let predicates = sample_brush_history.map((brush_data) => {
-            let selected = get_selected(data, brush_data, { x, y });
+            let selected = get_selected(data, brush_data, {x, y});
             return data_extent_predicate(data, selected, attributes);
         });
-        return { predicates, attributes };
+        return {predicates, attributes};
     } else {
         // "predicate regression"
         let response = await fetch_json(`${predicate_host}/get_predicates`, {
             //query server
             body: {
                 subsets: sample_brush_history.map((brush_data) => {
-                    return get_selected(data, brush_data, { x, y });
+                    return get_selected(data, brush_data, {x, y});
                 }),
                 dataset: dataset_name,
             },
@@ -76,6 +76,6 @@ export async function compute_predicates(
             ]);
             return Object.fromEntries(key_value_pairs);
         });
-        return { predicates, qualities, attributes };
+        return {predicates, qualities, attributes};
     }
 }

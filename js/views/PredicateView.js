@@ -15,7 +15,7 @@ import {
     overflow_box,
 } from "../lib.js";
 
-import { get_selected } from "./view-utils.js";
+import {get_selected} from "./view-utils.js";
 
 export default class PredicateView {
     svg;
@@ -159,7 +159,7 @@ export default class PredicateView {
                 let selected_data = get_selected(
                     this.data,
                     sample_brush_history[sample_brush_history.length - 1],
-                    { x, y },
+                    {x, y},
                 );
                 this.view_g.draw(
                     predicates,
@@ -303,9 +303,9 @@ function predicate_multiple(
 
     function draw_time_cursor(
         container,
-        { height, width, other_containers = [], vmax = 4, x_shift = 0 } = {},
+        {height, width, other_containers = [], vmax = 4, x_shift = 0} = {},
     ) {
-        let { sx, sy } = container.scales; //this was given by draw_intervals() as a side effect
+        let {sx, sy} = container.scales; //this was given by draw_intervals() as a side effect
         let cursor = container
             .selectAll(".time-cursor")
             .data([0])
@@ -343,7 +343,7 @@ function predicate_multiple(
         return container;
     }
 
-    function draw_attribute_label(container, { height, width } = {}) {
+    function draw_attribute_label(container, {height, width} = {}) {
         height = height || container.height;
         width = width || container.width;
         let font_size = 18;
@@ -378,7 +378,7 @@ function predicate_multiple(
         // .style("opacity", 0.7)
     }
 
-    function draw_background_rect(container, { top = 0, height, width } = {}) {
+    function draw_background_rect(container, {top = 0, height, width} = {}) {
         height = height || container.height;
         width = width || container.width;
         container
@@ -428,7 +428,7 @@ function predicate_multiple(
                 height - margin_bottom,
                 margin_top + interval_stroke_width / 2,
             ]);
-        container.scales = { sx, sy };
+        container.scales = {sx, sy};
 
         // y axis
         let ay = d3.axisRight(sy).ticks(0).tickSizeInner(-width);
@@ -584,11 +584,11 @@ function predicate_contrastive(
                 });
             });
         if (should_draw_images) {
-            g.call(draw_images, { sy, width, height });
+            g.call(draw_images, {sy, width, height});
         }
     };
 
-    function draw_images(container, { width, height, sy } = {}) {
+    function draw_images(container, {width, height, sy} = {}) {
         let first_brush_data = data.filter((d) => d.first_brush);
         let second_brush_data = data.filter((d) => d.second_brush);
         let selected_by_group = [first_brush_data, second_brush_data];
@@ -700,7 +700,7 @@ function predicate_contrastive(
 
     function draw_background_rect(
         container,
-        { height, width, top = 0, left = 0 } = {},
+        {height, width, top = 0, left = 0} = {},
     ) {
         height = height || container.height;
         width = width || container.width;
@@ -855,7 +855,7 @@ function predicate_single(
             console.log("[dragged]");
             console.log("event", event);
             console.log("d", d);
-            let { dx, dy } = event;
+            let {dx, dy} = event;
             let new_interval_max = sx.domain([d.vmin, d.vmax]).invert(event.x);
             d.interval_max = clip(new_interval_max, d.vmin, d.vmax);
             d3.select(this).attr(
@@ -943,7 +943,7 @@ function predicate_single(
 
     function draw_background_rect(
         container,
-        { height, width, top = 0, left = 0 } = {},
+        {height, width, top = 0, left = 0} = {},
     ) {
         height = height || container.height;
         width = width || container.width;

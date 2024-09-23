@@ -118,7 +118,7 @@ export default class SplomView {
     recolor() {
         this.splom.recolor(
             this.data.map((d) => [1, 0, 0, 1]),
-            { depths: this.data.map((d) => Math.random()) },
+            {depths: this.data.map((d) => Math.random())},
         );
     }
 
@@ -162,15 +162,85 @@ export default class SplomView {
             ticks: 3,
             wspace: 0.0, //splom_spacing,
             hspace: 0.0, //splom_spacing,
-            scales: { sc: this.sc },
+            scales: {sc: this.sc},
             label_fontsize: 12,
             stroke: "#eee",
-            stroke_width: 1,
+            stroke_width: 0.1,
         });
 
         //draw a predicate arrow path on each subplot of SPLOM
         if (
             n_boxes > 1 &&
+            splom_attributes !== undefined &&
+            predicates !== undefined
+        ) {
+            draw_predicates(
+                splom_obj.subplots.map((row) => row.map((plot) => plot.frame)),
+                splom_obj.subplots.map((row) =>
+                    row.map((plot) => plot.overlay),
+                ),
+                predicates,
+                splom_attributes,
+                n_boxes,
+            );
+        }
+              n_boxes > 1 &&
+            splom_attributes !== undefined &&
+            predicates !== undefined
+        ) {
+            draw_predicates(
+                splom_obj.subplots.map((row) => row.map((plot) => plot.frame)),
+                splom_obj.subplots.map((row) =>
+                    row.map((plot) => plot.overlay),
+                ),
+                predicates,
+                splom_attributes,
+                n_boxes,
+            );
+        }
+              n_boxes > 1 &&
+            splom_attributes !== undefined &&
+            predicates !== undefined
+        ) {
+            draw_predicates(
+                splom_obj.subplots.map((row) => row.map((plot) => plot.frame)),
+                splom_obj.subplots.map((row) =>
+                    row.map((plot) => plot.overlay),
+                ),
+                predicates,
+                splom_attributes,
+                n_boxes,
+            );
+        }
+              n_boxes > 1 &&
+            splom_attributes !== undefined &&
+            predicates !== undefined
+        ) {
+            draw_predicates(
+                splom_obj.subplots.map((row) => row.map((plot) => plot.frame)),
+                splom_obj.subplots.map((row) =>
+                    row.map((plot) => plot.overlay),
+                ),
+                predicates,
+                splom_attributes,
+                n_boxes,
+            );
+        }
+              n_boxes > 1 &&
+            splom_attributes !== undefined &&
+            predicates !== undefined
+        ) {
+            draw_predicates(
+                splom_obj.subplots.map((row) => row.map((plot) => plot.frame)),
+                splom_obj.subplots.map((row) =>
+                    row.map((plot) => plot.overlay),
+                ),
+                predicates,
+                splom_attributes,
+                n_boxes,
+            );
+        }
+              n_boxes > 1 &&
             splom_attributes !== undefined &&
             predicates !== undefined
         ) {
