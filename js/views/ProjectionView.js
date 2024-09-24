@@ -95,9 +95,10 @@ export default class ProjectionView {
         // width measures include margins assigned to frame
         this.plot_width = width * scatter_width; //width of main scatter plot and SPLOM
         this.plot_height = width * scatter_height + 2.6 * font_size; // "+ 2.6 * fs" makes sure the scatter plot is squared
+
         //paddings controls how much space we give the scatter plot within the frame.
-        this.padding_left = 1 + scatter_padding;
-        this.padding_right = 1 + scatter_padding;
+        this.padding_left = scatter_padding;
+        this.padding_right = scatter_padding;
         this.padding_bottom = scatter_padding;
         this.padding_top = font_size * 1.6 + scatter_padding;
 

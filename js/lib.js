@@ -411,6 +411,8 @@ export function scatter_gl(
         });
     };
     res._render = create_scatter_gl_program(regl);
+
+    //rendering APIs
     res.render = ({
         positions,
         colors,
@@ -429,8 +431,25 @@ export function scatter_gl(
             depth,
         });
     };
-
     res.redraw = (data) => {
+        res.render({
+            // attributes
+            positions: data.map((d, i) => [x(d, i), y(d, i)]), //array of two numbers
+            colors: data.map((d) => sc_gl(d)), // array of RGBA tuples
+            size: data.map((d) => s(d)), // array of numbers
+            depth: data.map((d, i) => depth(d, i)),
+            stroke: color2gl(stroke),
+            stroke_width,
+        });
+    };
+    res.recolor = (new_sc) => {
+        // update color scale
+        sc = new_sc;
+        sc_gl = (d) => {
+            let c = sc(d);
+            return [...color2gl(c), 1.0];
+        };
+        // re-render
         res.render({
             // attributes
             positions: data.map((d, i) => [x(d, i), y(d, i)]), //array of two numbers

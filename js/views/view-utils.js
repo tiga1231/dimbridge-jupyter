@@ -172,19 +172,9 @@ export function update_point_style(sca, mode = "confusion") {
 
 export function update_point_style_gl(sca_gl, mode = "confusion") {
     // TODO;
-    return;
     let style = get_point_style(mode);
-    sca_gl.update_style(style);
-    this.sc = (d, i) => style(d, i).fill;
-    //raise
-    // sca
-    //   .selectAll(".point")
-    //   .filter((d) => d.brushed)
-    //   .raise();
-    // sca
-    //   .selectAll(".point")
-    //   .filter((d) => d.pred == 1 && d.selected) //true postives
-    //   .raise();
+    let sc = (d, i) => style(d, i).fill;
+    sca_gl.recolor(sc);
 }
 
 export function get_point_style(mode = "confusion") {

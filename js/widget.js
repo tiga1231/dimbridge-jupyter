@@ -35,7 +35,7 @@ let config = {
     gap: 10,
 
     width: 900,
-    scatter_padding: 2,
+    scatter_padding: 1,
     scatter_width: 0.4,
     scatter_height: 0.4,
 

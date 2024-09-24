@@ -227,4 +227,4 @@ let make_sub_frame = (parent_elem, x, y, width, height, title, fs) => {
     return frame_g;
 };
 
-export { make_frame, make_sub_frame, make_bridge_frame };
+export {make_frame, make_sub_frame, make_bridge_frame};

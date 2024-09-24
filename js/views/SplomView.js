@@ -144,8 +144,7 @@ export default class SplomView {
         let splom_obj = splom_gl2(this.splom, this.data, {
             s: (d) => this.config.splom_mark_size, //size of circle marks
             stroke: "#eee",
-            stroke_width: 0.5,
-
+            stroke_width: 0.3,
             depth: (d, i) =>
                 d.brushed ||
                 d.first_brush ||
@@ -158,7 +157,7 @@ export default class SplomView {
             padding_right: this.padding_right,
             padding_bottom: this.padding_bottom,
             padding_top: this.padding_top,
-            layout: "lower", //'upper', 'lower', or 'both',
+            layout: "both", //'upper', 'lower', or 'both',
             width: this.plot_width,
             height: this.plot_width,
 
