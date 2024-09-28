@@ -129,9 +129,9 @@ export default class ProjectionView {
 
     draw() {
         let data = this.data;
-        // let sc = (d) => d3.schemeCategory10[1]; //TODO variable me
-        let style = get_point_style("selection");
-        let sc = (d, i) => style(d, i).fill;
+        let sc = (d) => d3.schemeCategory10[0]; //TODO variable me
+        // let style = get_point_style("selection");
+        // let sc = (d, i) => style(d, i).fill;
         this.sca = scatter_gl(d3.select(this.node), data, {
             x: (d, i) => this.x[i],
             y: (d, i) => this.y[i],
@@ -330,7 +330,7 @@ export default class ProjectionView {
         }
 
         // optionally, remove brush bounding boxes (bboxes)
-        // this.sca.overlay.selectAll(".bbox").remove();
+        this.sca.overlay.selectAll(".bbox").remove();
 
         if (this.n_boxes > 1 && event.mode === "drag") {
             //hide brush
@@ -394,7 +394,9 @@ export default class ProjectionView {
             this.crossfilter_dimensions["x"].filterAll();
             this.crossfilter_dimensions["y"].filterAll();
             clear_selected(this.data);
-            // this.sca.redraw(); // TODO
+            //redraw
+            let sc = (d) => d3.schemeCategory10[0];
+            this.sca.recolor(sc);
         }
     }
 

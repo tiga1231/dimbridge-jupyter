@@ -144,16 +144,15 @@ export function create_scatter_gl_program(regl) {
       if (dist>1.0) discard;
       gl_FragColor = v_color;
       // if (v_size > 6.0){ //border color if marker size > 2.0
-        float stroke = u_stroke_width / v_size; //normalized stroke width
-        // float mix_factor = dist > 1.0-stroke-eps ? 1.0: 0.0;
-        float mix_factor = smoothstep(1.0-stroke-eps, 1.0-stroke+eps, dist);
-        gl_FragColor = mix(
+      float stroke = u_stroke_width / v_size; //normalized stroke width
+      float mix_factor = smoothstep(1.0-stroke-eps, 1.0-stroke+eps, dist);
+      gl_FragColor = mix(
           v_color, 
           vec4(u_stroke, 1.0), 
           mix_factor
-        );
-        float alpha = 1.0 - clamp(pow((dist - (1.0-stroke))/stroke, 10.0), 0.0, 1.0);
-        gl_FragColor.a = alpha;
+      );
+      float alpha = 1.0 - smoothstep(1.0-stroke+stroke*0.8, 1.0, dist);
+      gl_FragColor.a = alpha;
       //}
     }`;
 
