@@ -1,27 +1,56 @@
 import * as d3 from "d3";
 
-import {get_selected, subsample} from "./views/view-utils.js";
+import {zip} from "./lib.js";
+import {subsample} from "./views/view-utils.js";
+import {default as crossfilter} from "https://cdn.skypack.dev/crossfilter2@1.5.4?min";
 
-function data_extent_predicate(data, selected, attributes) {
+function get_selected(brush_data, cf, dim_x, dim_y) {
+    //return list of boolean based on brush selection
+    // x, y are coordinate getter functions for points in data
+    let {x_extent, y_extent} = brush_data;
+    let [x0, x1] = x_extent;
+    let [y0, y1] = y_extent;
+    dim_x.filter([x0, x1]);
+    dim_y.filter([y0, y1]);
+    return cf.filterAll();
+}
+
+// function data_extent_predicate(data, selected, attributes) {}
+export class DataExtentPredicate {
     //From brush data, produce predicates derived base on data extent only.
     //Front end only. No backend server
-    console.log("data_extent_predicate");
-    let selected_data = data.filter((d, i) => selected[i]);
-    if (selected_data.length == 0) {
-        return {};
-    } else {
-        // let attr_interval_pairs = Object.keys(selected_data[0]).map(
-        let attr_interval_pairs = attributes.map((attr) => {
-            let interval;
-            if (typeof selected_data[0][attr] === "string") {
-                interval = new Set(selected_data.map((d) => d[attr]));
-            } else {
-                interval = d3.extent(selected_data, (d) => +d[attr]);
-            }
-            return [attr, interval];
-        });
-        let predicate = Object.fromEntries(attr_interval_pairs);
-        return predicate;
+    constructor(data, attributes) {
+        console.log("DataExtentPredicate init");
+
+        this.data = data;
+        this.attributes = attributes;
+
+        this.cf = crossfilter(data);
+        this.dimensions = Object.fromEntries(
+            attributes.map((a) => {
+                return [a, this.cf.dimension((d) => d[a])];
+            }),
+        );
+        this.dim_x = this.cf.dimension((d) => d.x);
+        this.dim_y = this.cf.dimension((d) => d.y);
+    }
+
+    compute_predicates(brush_data) {
+        let {x_extent, y_extent} = brush_data;
+        let [x0, x1] = x_extent;
+        let [y0, y1] = y_extent;
+        this.dim_x.filter([x0, x1]);
+        this.dim_y.filter([y0, y1]);
+
+        if (this.dim_x.top(1).length === 0) {
+            return {};
+        } else {
+            let intervals = this.attributes.map((attr) => {
+                let dim = this.dimensions[attr];
+                return [dim.bottom(1)[0][attr], dim.top(1)[0][attr]];
+            });
+            return Object.fromEntries(zip(this.attributes, intervals));
+        }
     }
 }
 

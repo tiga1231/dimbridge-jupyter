@@ -47,7 +47,6 @@ export function numpy2array(data_obj) {
     // data_obj - { dtype: "float64", shape: [2, 3], data: DatavView }
     //
     let {dtype, shape, data} = data_obj;
-    console.log("dtype", dtype);
     if (dtype === "float64") {
         data = new Float64Array(data.buffer);
     } else if (dtype === "int64") {
@@ -331,7 +330,7 @@ export function scatter_gl(
         label_fontsize = 12,
         stroke = "white",
         stroke_width = 1.0,
-        dpi_scale = 4.0,
+        dpi_scale = 2.0,
     } = {},
 ) {
     if (depth === undefined) {

@@ -4,7 +4,8 @@ export class InteractionController {
     predicate_view;
     splom_view;
 
-    constructor() {
+    constructor(predicate_engine) {
+        this.predicate_engine = predicate_engine;
         return this;
     }
 
@@ -16,49 +17,26 @@ export class InteractionController {
 
     on_projection_view_change({
         predicates,
-        attributes,
-        // qualities,
-        n_boxes,
-        // full_brush_history,
-        sample_brush_history,
-        x,
-        y,
+        // n_boxes,
+        // sample_brush_history,
+        // x,
+        // y,
     } = {}) {
         //get projection view brush-selected data
         //start predicate computation
 
         //update predicate view
         this.predicate_view.draw(
-            n_boxes,
+            predicates.length,
             predicates,
-            attributes,
-            sample_brush_history,
-            x,
-            y,
+            Object.keys(predicates[0]),
         );
 
         //update splom view
-        let predicate_attributes = attributes;
-        //The dimension of splom attributes
-        let splom_attributes;
-        let manual_splom_attributes = ["d2", "d3"]; //TODO
-        if (predicate_attributes !== undefined) {
-            splom_attributes = predicate_attributes;
-        } else if (manual_splom_attributes) {
-            splom_attributes = manual_splom_attributes;
-        } else {
-            let all_attributes = attributes;
-            let numerical_attributes = attributes.filter(
-                (attr) => typeof data[0][attr] === "number",
-            );
-            splom_attributes = numerical_attributes.slice(0, 5);
-        }
-        //limit the maximum number of attributes plot in both predicate view and splom
+        let predicate_attributes = Object.keys(predicates[0]);
         let subplot_limit = 9;
-        if (splom_attributes !== undefined) {
-            splom_attributes = splom_attributes.slice(0, subplot_limit);
-        }
-
+        let splom_attributes = predicate_attributes;
+        splom_attributes = splom_attributes.slice(0, subplot_limit);
         this.splom_view.draw(splom_attributes);
     }
 

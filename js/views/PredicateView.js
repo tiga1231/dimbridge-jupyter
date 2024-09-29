@@ -25,9 +25,10 @@ export default class PredicateView {
     plot_width;
     plot_height;
 
-    constructor(data, controller, config) {
+    constructor(data, model, controller, config) {
         console.log("new PredicateView");
         this.data = data;
+        this.model = model;
         this.controller = controller;
         this.config = config;
 
@@ -156,16 +157,16 @@ export default class PredicateView {
             //draw predicate view
             let should_draw_images = this.data[0].image_url !== undefined;
             if (n_boxes == 1) {
-                let selected_data = get_selected(
-                    this.data,
-                    sample_brush_history[sample_brush_history.length - 1],
-                    {x, y},
-                );
+                // let selected_data = get_selected(
+                //     this.data,
+                //     sample_brush_history[sample_brush_history.length - 1],
+                //     {x, y},
+                // );
                 this.view_g.draw(
                     predicates,
                     attributes,
-                    selected_data,
-                    should_draw_images,
+                    // selected_data,
+                    // should_draw_images,
                 );
             } else if (n_boxes == 2) {
                 let selected_TODO = undefined;
@@ -743,16 +744,15 @@ function predicate_single(
 
     g_container.draw = function (
         predicates,
-        splom_attributes,
-        selected,
-        should_draw_images,
+        attributes,
+        // selected,
+        // should_draw_images,
     ) {
         // predicates: one-element-array that contains an attr:interval pairs in an Object
         // splom_attributes: union of attributes in a sequence of brushes
 
-        let n_attributes = splom_attributes.length;
+        let n_attributes = attributes.length;
         let predicate = predicates[0];
-        let attributes = splom_attributes;
         let attribute_text_max_length = d3.max(attributes, (d) => d.length);
 
         //origin at interval min
@@ -909,36 +909,36 @@ function predicate_single(
             .text((d) => d);
 
         //draw images
-        if (selected && should_draw_images) {
-            let n_cols = 2,
-                remaining_height = height - sy.range()[1],
-                pad = 5,
-                actual_width = width - 2 * pad,
-                img_size = actual_width / 2;
-            let n_rows = Math.floor(remaining_height / img_size);
-            let selected_images = data
-                .filter((d, i) => selected[i])
-                .sort((a, b) => d3.ascending(a.x, b.x));
-            // selected_images = _.shuffle(selected_images);
-            selected_images = selected_images.slice(
-                0,
-                Math.min(n_rows * n_cols, selected_images.length),
-            );
-            let img_selection = g
-                .selectAll(".imggrid")
-                .data(selected_images)
-                .join("image")
-                .classed("imggrid", true)
-                .attr("width", img_size)
-                .attr("height", img_size)
-                .attr("x", (_, i) => pad + (i % n_cols) * img_size)
-                .attr(
-                    "y",
-                    (_, i) => Math.floor(i / n_cols) * img_size + sy.range()[1],
-                )
-                .attr("href", (d) => d.image_url);
-            img_selection.exit().remove();
-        }
+        // if (selected && should_draw_images) {
+        //     let n_cols = 2,
+        //         remaining_height = height - sy.range()[1],
+        //         pad = 5,
+        //         actual_width = width - 2 * pad,
+        //         img_size = actual_width / 2;
+        //     let n_rows = Math.floor(remaining_height / img_size);
+        //     let selected_images = data
+        //         .filter((d, i) => selected[i])
+        //         .sort((a, b) => d3.ascending(a.x, b.x));
+        //     // selected_images = _.shuffle(selected_images);
+        //     selected_images = selected_images.slice(
+        //         0,
+        //         Math.min(n_rows * n_cols, selected_images.length),
+        //     );
+        //     let img_selection = g
+        //         .selectAll(".imggrid")
+        //         .data(selected_images)
+        //         .join("image")
+        //         .classed("imggrid", true)
+        //         .attr("width", img_size)
+        //         .attr("height", img_size)
+        //         .attr("x", (_, i) => pad + (i % n_cols) * img_size)
+        //         .attr(
+        //             "y",
+        //             (_, i) => Math.floor(i / n_cols) * img_size + sy.range()[1],
+        //         )
+        //         .attr("href", (d) => d.image_url);
+        //     img_selection.exit().remove();
+        // }
     };
 
     function draw_background_rect(

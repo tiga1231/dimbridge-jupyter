@@ -30,8 +30,6 @@ import {
     update_point_style_gl,
 } from "./view-utils.js";
 
-import {compute_predicates} from "../PredicateEngine.js";
-
 export default class ProjectionView {
     constructor(
         data,
@@ -60,6 +58,7 @@ export default class ProjectionView {
         this.c = c; //color
 
         this.controller = controller;
+        this.predicate_engine = controller.predicate_engine;
         this.config = config;
         this.attributes = Object.keys(data[0]);
 
@@ -293,47 +292,24 @@ export default class ProjectionView {
         //eager draw: in 'data extent' mode, draw highlights on splom immediately
         if (this.predicate_mode === "data extent") {
             //compute predicates based on selected data
-            //TODO fixme elsewhere
-            this.data.forEach((d, i) => {
-                d.x = this.x[i];
-                d.y = this.y[i];
-            });
+            let n_brushes = this.full_brush_history.length;
+            let last_brush = this.full_brush_history[n_brushes - 1];
+            let predicates =
+                this.predicate_engine.compute_predicates(last_brush);
 
-            let {predicates, attributes, qualities} = await compute_predicates(
-                this.data,
-                this.full_brush_history,
-                this.n_boxes,
-                this.predicate_mode,
-                this.attributes,
-                {x: (d, i) => d.x, y: (d, i) => d.y},
-            );
-
-            if (predicates !== undefined && predicates.length >= 1) {
-                //Color scatter plot points by false positives, false negatives, etc.
-                let last_predicate = predicates[predicates.length - 1];
-                set_pred(this.data, last_predicate);
-                update_point_style_gl(this.sca, "selection");
-            }
-
-            console.log("projection view updating other views...");
-            console.log("predicates", predicates);
-            console.log("attributes", attributes);
+            //TODO make is fast with this.cf
+            set_pred(this.data, predicates);
+            update_point_style_gl(this.sca, "selection");
 
             //update other views
             this.controller.on_projection_view_change({
-                predicates,
-                attributes,
-                qualities,
-                n_boxes: this.n_boxes,
-                full_brush_history: this.full_brush_history,
-                sample_brush_history: this.sample_brush_history,
-                x: (d, i) => this.x[i],
-                y: (d, i) => this.y[i],
+                predicates: [predicates],
             });
         }
     }
 
     async brush_end(event) {
+        return;
         //sync with backend
         let selected = d3
             .range(this.data.length)

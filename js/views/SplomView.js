@@ -33,7 +33,7 @@ import {
 } from "./view-utils.js";
 
 export default class SplomView {
-    constructor(data, controller, config) {
+    constructor(data, model, controller, config) {
         /*
     - Take data points and a list of attributes (e.g., predicates, or manual selection of attributes)
     - Renders data points in SPLOM
@@ -41,6 +41,7 @@ export default class SplomView {
     */
         console.log("new SplomView");
         this.data = data;
+        this.model = model;
         this.config = config;
         this.node = this.init_node();
     }
@@ -139,8 +140,9 @@ export default class SplomView {
         }
 
         //draw splom
+        ////TODO make it more efficient without recreate canvas
         this.splom.selectAll("*").remove();
-        console.log("splom removed and redrawn"); //TODO make it more efficient
+        console.log("splom removed and redrawn");
         let splom_obj = splom_gl2(this.splom, this.data, {
             s: (d) => this.config.splom_mark_size, //size of circle marks
             stroke: "#eee",
@@ -157,7 +159,7 @@ export default class SplomView {
             padding_right: this.padding_right,
             padding_bottom: this.padding_bottom,
             padding_top: this.padding_top,
-            layout: "both", //'upper', 'lower', or 'both',
+            layout: "upper", //'upper', 'lower', or 'both',
             width: this.plot_width,
             height: this.plot_width,
 

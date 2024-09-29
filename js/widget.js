@@ -2,6 +2,7 @@
 import * as d3 from "d3";
 import numeric from "https://cdn.skypack.dev/numeric@1.2.6?min";
 import math from "./lib/math.js";
+import {DataExtentPredicate} from "./DataExtentPredicate.js";
 
 // custom
 import "./widget.css";
@@ -68,13 +69,26 @@ export default {
 
         //get data from python
         let data = pandas2array(model.get("data"));
+        let attributes = Object.keys(data[0]);
         let x = numpy2array(model.get("x"));
         let y = numpy2array(model.get("y"));
         let s = numpy2array(model.get("s"));
         let c = numpy2array(model.get("c"));
 
+        data.forEach((d, i) => {
+            d.x = x[i];
+            d.y = y[i];
+        });
+
+        // predicate
+        let predicate_mode = "data extent"; // 'predicate regression'
+        let predicate_engine =
+            predicate_mode === "data extent"
+                ? new DataExtentPredicate(data, attributes)
+                : new DataExtentPredicate(data, attributes); // TODO
+
         //init controller
-        let controller = new InteractionController();
+        let controller = new InteractionController(predicate_engine);
 
         //init views
         let projection_view = new ProjectionView(
@@ -84,9 +98,9 @@ export default {
             controller,
             config,
         );
-        let predicate_view = new PredicateView(data, controller, config);
+        let predicate_view = new PredicateView(data, model, controller, config);
         // let splom_view = {node: create_svg().node(), draw: () => {}}; //dummy view
-        let splom_view = new SplomView(data, controller, config);
+        let splom_view = new SplomView(data, model, controller, config);
 
         // tell controller to manage between-view interactions
         controller.add_views(projection_view, predicate_view, splom_view);
