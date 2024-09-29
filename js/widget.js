@@ -70,6 +70,8 @@ export default {
         let data = pandas2array(model.get("data"));
         let x = numpy2array(model.get("x"));
         let y = numpy2array(model.get("y"));
+        let s = numpy2array(model.get("s"));
+        let c = numpy2array(model.get("c"));
 
         //init controller
         let controller = new InteractionController();
@@ -77,12 +79,12 @@ export default {
         //init views
         let projection_view = new ProjectionView(
             data,
-            {x, y},
+            {x, y, s, c},
             controller,
             config,
         );
         let predicate_view = new PredicateView(data, controller, config);
-        // let splom_view = { node: create_svg().node(), draw: () => {} }; //dummy view
+        // let splom_view = {node: create_svg().node(), draw: () => {}}; //dummy view
         let splom_view = new SplomView(data, controller, config);
 
         // tell controller to manage between-view interactions
@@ -107,7 +109,6 @@ export default {
         d3.select(return_node).style("padding", "8px"); // give some space for shadow effects
 
         el.appendChild(return_node);
-        // set_value(return_node, { projection_view, predicate_view, splom_view });
         return cleanup;
 
         //// get plot data
@@ -124,14 +125,6 @@ export default {
         //let title = model.get("title");
         //let square_scale = model.get("square_scale");
 
-        //// append DOM
-        //let svg = create_svg(width, height);
-        //el.appendChild(svg.node());
-
-        //let scatter_data = d3
-        //    .range(x.length)
-        //    .map((i) => ({ index: i, x: x[i], y: y[i], c: c[i] }));
-
         ////color scale
         //let sc;
         //if (model.get("c").dtype.includes("int")) {
@@ -144,42 +137,6 @@ export default {
         //    let vdiff = vmax - vmin;
         //    sc = (d, i) => d3.interpolateViridis((d.c - vmin) / vdiff);
         //}
-
-        //// draw
-        //let sca = lib.scatter(svg, scatter_data, {
-        //    x: (d) => d.x,
-        //    y: (d) => d.y,
-        //    label_fontsize: 14,
-        //    padding_top: 14 * 2,
-        //    title: title,
-        //    xlabel: xlabel,
-        //    ylabel: ylabel,
-        //    width: width,
-        //    height: height,
-        //    s: (d, i) => s[i],
-
-        //    xticks: xticks,
-        //    yticks: yticks,
-        //    // x_tickvalues: linspace(0, 1, 4),
-
-        //    scales: { sc: sc },
-        //    is_square_scale: square_scale,
-        //    brush: true,
-        //    brush_highlight: true,
-        //    brush_listeners: {
-        //        brush: (brushed_data1) => {},
-        //        end: (brushed_data1) => {
-        //            console.log("brush end", brushed_data1);
-        //            //update selection attr
-        //            model.set(
-        //                "selected",
-        //                brushed_data1.map((d) => d.index),
-        //            );
-        //            model.set("new_value", 13);
-        //            model.save_changes();
-        //        },
-        //    },
-        //});
 
         //model.on("change:x", function () {
         //    console.log(arguments);

@@ -252,7 +252,12 @@ export function scatter_frame(
 }
 
 export function color2gl(color) {
-    let c = d3.rgb(d3.color(color));
+    let c;
+    if (typeof color === "string") {
+        c = d3.rgb(d3.color(color));
+    } else {
+        c = d3.rgb(...color);
+    }
     return [c.r / 255, c.g / 255, c.b / 255];
 }
 
@@ -306,8 +311,9 @@ export function scatter_gl(
         yticks = 5,
         x_tickvalues = undefined,
         y_tickvalues = undefined,
-        x = (d) => d.x,
-        y = (d) => d.y,
+        x = (d, i) => d.x,
+        y = (d, i) => d.y,
+        s = (d, i) => 10, //marker size
         depth = undefined, //(d, i) => i / 100,
         scales = {},
         width = 500,
@@ -317,7 +323,6 @@ export function scatter_gl(
         padding_right = 0,
         padding_top = 0,
         pad = 0.1,
-        s = (d) => 10, //marker size
         title = undefined,
         is_square_scale = false,
         is_log_scale = false,
@@ -387,8 +392,8 @@ export function scatter_gl(
         .range([sy_svg2gl(sy.range()[0]), sy_svg2gl(sy.range()[1])]);
 
     let sc = scales.sc || ((d) => C[0]);
-    let sc_gl = (d) => {
-        let c = sc(d);
+    let sc_gl = (d, i) => {
+        let c = sc(d, i);
         return [...color2gl(c), 1.0];
     };
 
@@ -434,8 +439,8 @@ export function scatter_gl(
         res.render({
             // attributes
             positions: data.map((d, i) => [x(d, i), y(d, i)]), //array of two numbers
-            colors: data.map((d) => sc_gl(d)), // array of RGBA tuples
-            size: data.map((d) => s(d)), // array of numbers
+            colors: data.map((d, i) => sc_gl(d, i)), // array of RGBA tuples
+            size: data.map((d, i) => s(d, i)), // array of numbers
             depth: data.map((d, i) => depth(d, i)),
             stroke: color2gl(stroke),
             stroke_width,
@@ -444,16 +449,16 @@ export function scatter_gl(
     res.recolor = (new_sc) => {
         // update color scale
         sc = new_sc;
-        sc_gl = (d) => {
-            let c = sc(d);
+        sc_gl = (d, i) => {
+            let c = sc(d, i);
             return [...color2gl(c), 1.0];
         };
         // re-render
         res.render({
             // attributes
             positions: data.map((d, i) => [x(d, i), y(d, i)]), //array of two numbers
-            colors: data.map((d) => sc_gl(d)), // array of RGBA tuples
-            size: data.map((d) => s(d)), // array of numbers
+            colors: data.map((d, i) => sc_gl(d, i)), // array of RGBA tuples
+            size: data.map((d, i) => s(d, i)), // array of numbers
             depth: data.map((d, i) => depth(d, i)),
             stroke: color2gl(stroke),
             stroke_width,

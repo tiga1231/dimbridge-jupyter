@@ -9,7 +9,7 @@ import pandas as pd
 # anywidget / UI
 import anywidget
 import traitlets
-from traitlets import observe
+from traitlets import observe, default
 from traitlets import (
     Int,
     List,
@@ -60,6 +60,14 @@ class Dimbridge(anywidget.AnyWidget):
     width = Float(500).tag(sync=True)
     height = Float(305).tag(sync=True)
     square_scale = Bool(True).tag(sync=True)
+
+    @default("s")
+    def _default_s(self):
+        return np.zeros_like(self.x) + 6
+
+    @default("c")
+    def _default_c(self):
+        return np.repeat([[31, 119, 180]], self.x.shape[0], 0).astype(np.int32)
 
     # response to value change
     @observe("selected")

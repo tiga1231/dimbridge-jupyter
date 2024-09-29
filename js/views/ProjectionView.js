@@ -38,7 +38,10 @@ export default class ProjectionView {
         {
             x, //array of x coordinates for the DR projection
             y,
+            c,
+            s,
         } = {},
+
         controller,
         config,
     ) {
@@ -51,6 +54,10 @@ export default class ProjectionView {
         this.data = data;
         this.x = x;
         this.y = y;
+
+        this.s = s; //size
+        this.c = c; //color
+
         this.controller = controller;
         this.config = config;
         this.attributes = Object.keys(data[0]);
@@ -129,13 +136,15 @@ export default class ProjectionView {
 
     draw() {
         let data = this.data;
-        let sc = (d) => d3.schemeCategory10[0]; //TODO variable me
+        // sc = (d, i) => d3.schemeCategory10[0];
+        let sc = (d, i) => this.c[i];
+
         // let style = get_point_style("selection");
         // let sc = (d, i) => style(d, i).fill;
         this.sca = scatter_gl(d3.select(this.node), data, {
             x: (d, i) => this.x[i],
             y: (d, i) => this.y[i],
-            s: (d) => 6,
+            s: (d, i) => this.s[i],
             stroke_width: 1.5,
             width: this.plot_width,
             height: this.plot_height,
