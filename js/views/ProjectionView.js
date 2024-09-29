@@ -41,7 +41,7 @@ export default class ProjectionView {
             c,
             s,
         } = {},
-
+        model,
         controller,
         config,
     ) {
@@ -52,6 +52,7 @@ export default class ProjectionView {
     - For now (maybe move to somewhere else in the future), its brush also ask backend for predicates and retain that knowledge of predicates
   */
         this.data = data;
+        this.model = model; // the python model
         this.x = x;
         this.y = y;
 
@@ -62,9 +63,9 @@ export default class ProjectionView {
         this.config = config;
         this.attributes = Object.keys(data[0]);
 
-        this.cf = this.init_crossfilter(data);
+        this.cf = this.init_crossfilter(data, this.attributes);
         this.node = this.init_node();
-        console.log(this.node, "NODE");
+
         this.draw();
         this.brush = this.init_brush();
         this.brush_mode = "single"; //TODO support "contrustive" and "curve"
@@ -73,12 +74,12 @@ export default class ProjectionView {
         return this;
     }
 
-    init_crossfilter(data) {
-        //Take all keys in data[0] as attributes,
+    init_crossfilter(data, attributes) {
+        //Take all data and an awway of attribute strings
         //Returns
         //this.crossfilter_dimensions - an object with keys being attributes,
         //and values beinging the corresponding crossfilter dimension objects
-        let cf_attributes = Object.keys(data[0]);
+        let cf_attributes = attributes.slice();
         let cf = crossfilter(data);
         let cf_dimensions = cf_attributes.map((attr) =>
             cf.dimension((d) => d[attr]),
@@ -333,6 +334,13 @@ export default class ProjectionView {
     }
 
     async brush_end(event) {
+        //sync with backend
+        let selected = d3
+            .range(this.data.length)
+            .filter((d, i) => this.cf.isElementFiltered(i));
+        this.model.set("selected", selected);
+        this.model.save_changes();
+
         if (this.n_boxes > 1 && event.mode !== "drag") {
             // In contrastive or curve mode (n_boxes > 1), if the brush is resized rather than dragged, do nothing.
             return;
@@ -355,6 +363,7 @@ export default class ProjectionView {
                 );
             }
         }
+
         //compute predicates based on selected data
         let {predicates, attributes, qualities} = await compute_predicates(
             this.data,

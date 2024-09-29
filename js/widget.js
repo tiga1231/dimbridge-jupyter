@@ -80,6 +80,7 @@ export default {
         let projection_view = new ProjectionView(
             data,
             {x, y, s, c},
+            model,
             controller,
             config,
         );
