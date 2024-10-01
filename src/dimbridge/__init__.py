@@ -11,16 +11,17 @@ import anywidget
 import traitlets
 from traitlets import observe, default
 from traitlets import (
+    Any,
+    Bool,
+    Callable,
+    Dict,
+    Enum,
+    Float,
+    Instance,
     Int,
     List,
-    Dict,
-    Float,
     Set,
-    Callable,
-    Instance,
-    Any,
     Unicode,
-    Bool,
 )
 
 # custom modules
@@ -47,19 +48,36 @@ class Dimbridge(anywidget.AnyWidget):
     c = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark color
     s = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark size
 
+    predicate_mode = Enum(
+        [
+            "data extent",
+            "predicate regression",
+        ],
+        default_value="data extent",
+    ).tag(sync=True)
+    brush_mode = Enum(
+        [
+            "single",
+            "contrastive",
+            "curve",
+        ],
+        default_value="single",
+    ).tag(sync=True)
+
+    # plot settings
     xticks = Int(5).tag(sync=True)
     yticks = Int(5).tag(sync=True)
     xlabel = Unicode("xlabel").tag(sync=True)
     ylabel = Unicode("ylabel").tag(sync=True)
     title = Unicode("").tag(sync=True)
 
-    # output attributes
-    selected = List([]).tag(sync=True)
-
     # styles/layout traits
     width = Float(500).tag(sync=True)
     height = Float(305).tag(sync=True)
     square_scale = Bool(True).tag(sync=True)
+
+    # output attributes
+    selected = List([]).tag(sync=True)
 
     @default("s")
     def _default_s(self):

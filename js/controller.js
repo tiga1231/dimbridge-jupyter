@@ -1,53 +1,42 @@
 export class InteractionController {
-    //fields
-    projection_view;
-    predicate_view;
-    splom_view;
+  //fields
+  projection_view;
+  predicate_view;
+  splom_view;
 
-    constructor(predicate_engine) {
-        this.predicate_engine = predicate_engine;
-        return this;
-    }
+  constructor() {
+    return this;
+  }
 
-    add_views(projection_view, predicate_view, splom_view) {
-        this.projection_view = projection_view;
-        this.predicate_view = predicate_view;
-        this.splom_view = splom_view;
-    }
+  add_views(projection_view, predicate_view, splom_view) {
+    this.projection_view = projection_view;
+    this.predicate_view = predicate_view;
+    this.splom_view = splom_view;
+  }
 
-    on_projection_view_change({
-        predicates,
-        // n_boxes,
-        // sample_brush_history,
-        // x,
-        // y,
-    } = {}) {
-        //get projection view brush-selected data
-        //start predicate computation
+  on_projection_view_change(predicates) {
+    //get projection view brush-selected data
+    //start predicate computation
 
-        //update predicate view
-        this.predicate_view.draw(
-            predicates.length,
-            predicates,
-            Object.keys(predicates[0]),
-        );
+    //update predicate view
+    this.predicate_view.draw(predicates);
 
-        //update splom view
-        let predicate_attributes = Object.keys(predicates[0]);
-        let subplot_limit = 9;
-        let splom_attributes = predicate_attributes;
-        splom_attributes = splom_attributes.slice(0, subplot_limit);
-        this.splom_view.draw(splom_attributes);
-    }
+    //update splom view
+    let predicate_attributes = Object.keys(predicates[0]);
+    let subplot_limit = 9;
+    let splom_attributes = predicate_attributes;
+    splom_attributes = splom_attributes.slice(0, subplot_limit);
+    this.splom_view.draw(splom_attributes);
+  }
 
-    on_predicate_view_change(data) {
-        console.log("predicate view changed");
+  on_predicate_view_change(data) {
+    console.log("predicate view changed");
 
-        //update projection view
-        crossfilter_dimensions["x"].filterAll();
-        crossfilter_dimensions["y"].filterAll();
-        update_point_style(this.projection_view.sca, "selection");
-    }
+    //update projection view
+    crossfilter_dimensions["x"].filterAll();
+    crossfilter_dimensions["y"].filterAll();
+    update_point_style(this.projection_view.sca, "selection");
+  }
 
-    on_splom_view_change() {}
+  on_splom_view_change() {}
 }
