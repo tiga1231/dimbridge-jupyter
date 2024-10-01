@@ -280,4 +280,5 @@ export function draw_boxes(sca, intervals, {stroke_width = 2} = {}) {
         .attr("stroke-width", stroke_width);
     // .attr("stroke-width", (d, i) => {
     //   return 0.3 + (1.2 * i) / n;
-  
+    // });
+}
