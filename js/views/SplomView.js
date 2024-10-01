@@ -90,7 +90,7 @@ export default class SplomView {
                 ? "confusion"
                 : n_boxes == 2
                   ? "contrastive"
-                  : "selection";
+                  : "brush";
         let style = get_point_style(color_mode);
         this.sc = (d, i) => style(d, i).fill;
 

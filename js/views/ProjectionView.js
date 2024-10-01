@@ -227,7 +227,7 @@ export default class ProjectionView {
             } else if (this.brush_mode == "contrastive") {
                 this.n_boxes = 2;
             } else if (this.brush_mode == "curve") {
-                this.n_boxes = 12;
+                this.n_boxes = 24;
             }
         }
     }
@@ -362,7 +362,7 @@ export default class ProjectionView {
                 update_point_style_gl(this.sca, "contrastive");
             } else {
                 //highligh all selected points by brush curve
-                update_point_style_gl(this.sca, "selection");
+                update_point_style_gl(this.sca, "brush");
             }
 
             //update other views
