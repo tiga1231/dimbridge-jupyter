@@ -17,16 +17,15 @@ export class InteractionController {
     on_projection_view_change(predicates) {
         //get projection view brush-selected data
         //start predicate computation
-
         //update predicate view
         this.predicate_view.draw(predicates);
-
         //update splom view
         let predicate_attributes = Object.keys(predicates[0]);
         let subplot_limit = 9;
         let splom_attributes = predicate_attributes;
         splom_attributes = splom_attributes.slice(0, subplot_limit);
-        this.splom_view.draw(splom_attributes);
+        this.splom_view.draw(splom_attributes, predicates);
+        this.splom_view.recolor("selection"); //TODO: change brush brush_mode and switch redraw and recolor
     }
 
     on_predicate_view_change(data) {
