@@ -738,33 +738,6 @@ export function splom_gl2(
         });
     };
 
-    // return_node.render = ({
-    //   positions,
-    //   colors,
-    //   size,
-    //   stroke,
-    //   stroke_width,
-    //   depth
-    // } = {}) => {
-    //   //e.g., depth = positions.map((d, i) => -i / positions.length);
-    //   return_node._render({
-    //     positions: positions.map((d) => [sx_gl(d[0]), sy_gl(d[1])]),
-    //     colors,
-    //     count: positions.length,
-    //     size: size.map((s) => s * window.devicePixelRatio),
-    //     stroke,
-    //     stroke_width: stroke_width * window.devicePixelRatio,
-    //     depth
-    //   });
-    // };
-    // return_node.redraw = (data) => {
-    //   return_node.render({
-    //     positions: data.map((d) => [x(d), y(d)]), //array of two numbers
-    //     colors: data.map((d) => sc_gl(d)), // array of RGBA tuples
-    //     size: data.map((d) => s(d)) // array of numbers
-    //   });
-    // };
-
     return return_node;
 }
 

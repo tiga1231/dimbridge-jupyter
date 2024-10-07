@@ -227,7 +227,7 @@ export default class ProjectionView {
             } else if (this.brush_mode == "contrastive") {
                 this.n_boxes = 2;
             } else if (this.brush_mode == "curve") {
-                this.n_boxes = 24;
+                this.n_boxes = 18;
             }
         }
     }
@@ -266,7 +266,12 @@ export default class ProjectionView {
             update_point_style_gl(this.sca, "selection");
         }
         //draw fancy brush stroke (arrow, and shaded stroke)
-        if (this.n_boxes > 2) {
+        if (this.n_boxes == 2) {
+            this.g_brush_path.call(draw_path, this.sample_brush_history, {
+                size: 0,
+                "stroke-width": 3,
+            });
+        } else if (this.n_boxes > 2) {
             this.g_brush_path.call(draw_path, this.sample_brush_history, {
                 size: this.full_brush_history[0].brush_size,
                 "stroke-width": 3,
@@ -286,7 +291,7 @@ export default class ProjectionView {
         this.g_brush.raise();
 
         //eager draw: in single brush, draw highlights on splom immediately
-        if (this.n_boxes === 1) {
+        if (this.predicate_mode === "data extent") {
             //compute predicates based on selected data
             let n_brushes = this.full_brush_history.length;
             let last_brush = this.full_brush_history[n_brushes - 1];
@@ -323,7 +328,7 @@ export default class ProjectionView {
         }
 
         // optionally, remove brush bounding boxes (bboxes) after brush end (e.g, mouse release)
-        this.sca.overlay.selectAll(".bbox").remove();
+        // this.sca.overlay.selectAll(".bbox").remove();
 
         //dragging brushed region
         if (this.n_boxes > 1 && event.mode === "drag") {
@@ -366,7 +371,7 @@ export default class ProjectionView {
             }
 
             //update other views
-            console.log("PREDICATRESA", predicates);
+            console.log("predicates", predicates);
             this.controller.on_projection_view_change(predicates);
             // attributes,
             // qualities,

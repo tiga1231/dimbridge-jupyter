@@ -894,7 +894,10 @@ function predicate_multiple(
         let margin_top = 2;
         let margin_bottom = 2;
         let interval_data = intervals;
-        let interval_stroke_width = 8;
+        let interval_stroke_width = Math.max(
+            (width / intervals.length) * 0.7,
+            4,
+        );
 
         let sx = d3
             .scaleLinear()

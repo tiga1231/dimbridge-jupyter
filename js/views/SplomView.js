@@ -15,8 +15,24 @@ import {
     scatter,
     overflow_box,
     splom_gl2,
+    color2gl,
     create_canvas,
 } from "../lib.js";
+
+import {
+    // clear_path,
+    // clear_selected,
+    // define_arrowhead,
+    // draw_boxes,
+    draw_path,
+    // get_point_style,
+    // get_selected,
+    // set_pred,
+    // set_selected,
+    // set_selected_2,
+    // update_brush_history,
+    // update_point_style_gl,
+} from "./view-utils.js";
 
 import {
     // define_arrowhead,
@@ -60,7 +76,6 @@ export default class SplomView {
             splom_mark_size,
         } = this.config;
 
-        let n_boxes = 1;
         //gap between subplots in splot, measured in proportion (0 to 1) to the size of a subplot
         let splom_spacing = 0.03;
         this.plot_width = width * scatter_width - gap; //width of main scatter plot and SPLOM
@@ -84,16 +99,6 @@ export default class SplomView {
             .style("height", `${this.plot_height}px`)
             .style("position", "relative");
 
-        this.predicate_mode = "data extent"; //TODO FIXME later
-        let color_mode =
-            n_boxes == 1 && this.predicate_mode !== "data extent"
-                ? "confusion"
-                : n_boxes == 2
-                  ? "contrastive"
-                  : "brush";
-        let style = get_point_style(color_mode);
-        this.sc = (d, i) => style(d, i).fill;
-
         let frame_svg = create_svg(this.plot_width, this.plot_height);
         frame_svg.style("overflow", "visible");
         frame_svg.call(
@@ -116,22 +121,44 @@ export default class SplomView {
         return container_div.node();
     }
 
-    recolor() {
-        this.splom.recolor(
-            this.data.map((d) => [1, 0, 0, 1]),
-            {depths: this.data.map((d) => Math.random())},
-        );
+    recolor(mode = "selection") {
+        let style = get_point_style(mode);
+        console.log(style);
+        let depth = (d, i) =>
+            d.brushed || d.first_brush || d.second_brush || d.pred || d.selected
+                ? -0.99
+                : i / this.data.length;
+
+        let sc = (d, i) => style(d, i).fill;
+        let sc_gl = (d, i) => {
+            let c = sc(d, i);
+            return [...color2gl(c), 1.0];
+        };
+
+        let new_colors = this.data.map((d, i) => sc_gl(d, i)); // array of RGBA tuples
+        let new_depths = this.data.map((d, i) => depth(d, i));
+        this.splom_obj.recolor(new_colors, {depths: new_depths});
     }
 
-    draw(splom_attributes) {
+    draw(splom_attributes, predicates = []) {
+        console.log("splom_view.draw, predicates=", predicates);
         // let { n_boxes, predicates } = projection_view.value;
-        let n_boxes = 1;
-        let predicates = [];
+        let n_boxes = predicates.length;
+
+        this.predicate_mode = "data extent"; //TODO FIXME later
+        let color_mode =
+            n_boxes == 1 && this.predicate_mode !== "data extent"
+                ? "confusion"
+                : n_boxes == 2
+                  ? "contrastive"
+                  : "brush";
+        let style = get_point_style(color_mode);
+        this.sc = (d, i) => style(d, i).fill;
 
         if (predicates !== undefined) {
             //attach dummy ranges if certain clause doesn't exist for some brush t
             for (let predicate_t of predicates) {
-                for (let attr of attributes) {
+                for (let attr of splom_attributes) {
                     if (!(attr in predicate_t)) {
                         predicate_t[attr] = extent[attr];
                     }
@@ -143,10 +170,10 @@ export default class SplomView {
         ////TODO make it more efficient without recreate canvas
         this.splom.selectAll("*").remove();
         console.log("splom removed and redrawn");
-        let splom_obj = splom_gl2(this.splom, this.data, {
+        this.splom_obj = splom_gl2(this.splom, this.data, {
             s: (d) => this.config.splom_mark_size, //size of circle marks
             stroke: "#eee",
-            stroke_width: 0.3,
+            stroke_width: 0.5,
             depth: (d, i) =>
                 d.brushed ||
                 d.first_brush ||
@@ -159,7 +186,7 @@ export default class SplomView {
             padding_right: this.padding_right,
             padding_bottom: this.padding_bottom,
             padding_top: this.padding_top,
-            layout: "upper", //'upper', 'lower', or 'both',
+            layout: "both", //'upper', 'lower', or 'both',
             width: this.plot_width,
             height: this.plot_width,
 
@@ -173,20 +200,121 @@ export default class SplomView {
         });
 
         //draw a predicate arrow path on each subplot of SPLOM
-        if (
-            n_boxes > 1 &&
-            splom_attributes !== undefined &&
-            predicates !== undefined
-        ) {
-            draw_predicates(
-                splom_obj.subplots.map((row) => row.map((plot) => plot.frame)),
-                splom_obj.subplots.map((row) =>
-                    row.map((plot) => plot.overlay),
-                ),
+        if (n_boxes > 1) {
+            console.log("splom_view drawing arrows");
+            this.draw_predicate_arrows(
+                this.splom_obj.subplots,
                 predicates,
                 splom_attributes,
-                n_boxes,
             );
+        }
+    }
+
+    draw_predicate_arrows(
+        subplots,
+        predicates,
+        splom_attributes,
+        // n_boxes = 1,
+        // sample_brush_history
+        //
+    ) {
+        let n_boxes = predicates.length;
+        let data = this.data;
+        //for each plot:
+        for (let i = 0; i < subplots.length; i++) {
+            for (let j = 0; j < subplots[0].length; j++) {
+                if (subplots[i][j] === undefined) continue;
+
+                let aj = splom_attributes[j];
+                let ai = splom_attributes[i];
+                let intervals = predicates.map((d) => {
+                    let predicate_exist_for_plot = ai in d && aj in d;
+                    if (
+                        !predicate_exist_for_plot ||
+                        Object.keys(d).length == 0
+                    ) {
+                        return {
+                            x0: 0,
+                            x1: 0,
+                            y0: 0,
+                            y1: 0,
+                        };
+                    } else {
+                        return {
+                            // x0: d[splom_attributes[j]][0],
+                            x0: d[aj][0],
+                            x1: d[aj][1],
+                            y0: d[ai][0],
+                            y1: d[ai][1],
+                        };
+                    }
+                });
+
+                if (n_boxes > 1) {
+                    // draw_boxes(splo.plots[i][j], intervals);
+                    let {sx, sy} = subplots[i][j].scales;
+                    let path_data;
+                    if (n_boxes == 2) {
+                        //show data mean, instead of predicate
+                        let first_cx = sx(
+                            d3.mean(
+                                data.filter((d) => d.first_brush),
+                                (d) => d[aj],
+                            ),
+                        );
+                        let first_cy = sy(
+                            d3.mean(
+                                data.filter((d) => d.first_brush),
+                                (d) => d[ai],
+                            ),
+                        );
+                        let second_cx = sx(
+                            d3.mean(
+                                data.filter((d) => d.second_brush),
+                                (d) => d[aj],
+                            ),
+                        );
+                        let second_cy = sy(
+                            d3.mean(
+                                data.filter((d) => d.second_brush),
+                                (d) => d[ai],
+                            ),
+                        );
+                        path_data = [
+                            {
+                                cx: first_cx,
+                                cy: first_cy,
+                            },
+                            {
+                                cx: second_cx,
+                                cy: second_cy,
+                            },
+                        ];
+                    } else {
+                        // n_boxes>2
+                        path_data = predicates.map((d) => ({
+                            cx: sx(d3.mean(d[aj])),
+                            cy: sy(d3.mean(d[ai])),
+                        }));
+                    }
+                    // path_data = subsample(path_data, 6);
+                    let path_style = {
+                        size: 0,
+                        "stroke-width": 2,
+                    };
+
+                    subplots[i][j].overlay
+                        .selectAll("g.brush-path")
+                        .data([0])
+                        .join("g")
+                        .attr("class", "brush-path")
+                        .attr("display", null)
+                        .call(draw_path, path_data, path_style);
+
+                    //TODO update color
+                    //splo.plots[i][j].update_style(...)
+                }
+            }
         }
     }
 }
