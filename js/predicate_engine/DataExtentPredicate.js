@@ -44,7 +44,10 @@ export class DataExtentPredicate {
             this.dim_x.filter([x0, x1]);
             this.dim_y.filter([y0, y1]);
             if (this.dim_x.top(1).length === 0) {
-                return {};
+                let dummy_predicate = Object.fromEntries(
+                    this.attributes.map((k) => [k, [0, 1e-4]]),
+                );
+                return dummy_predicate;
             } else {
                 let intervals = this.attributes.map((attr) => {
                     let dim = this.dimensions[attr];

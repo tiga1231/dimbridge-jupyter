@@ -38,7 +38,7 @@ class Dimbridge(anywidget.AnyWidget):
 
     # JS esm and css files
     _esm = pathlib.Path(__file__).parent / "static" / "widget.js"
-    _css = pathlib.Path(__file__).parent / "static" / "widget.css"
+    # _css = pathlib.Path(__file__).parent / "static" / "widget.css"
 
     # input attributes
     # .tag(sync=True) is required by AnyWidget to have them in sync with the JavaScript model
@@ -47,6 +47,8 @@ class Dimbridge(anywidget.AnyWidget):
     y = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)
     c = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark color
     s = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark size
+    # color map
+    cmap = Enum(["viridis", "set10"], default_value="viridis").tag(sync=True)
 
     predicate_mode = Enum(
         [
@@ -55,6 +57,7 @@ class Dimbridge(anywidget.AnyWidget):
         ],
         default_value="data extent",
     ).tag(sync=True)
+
     brush_mode = Enum(
         [
             "single",

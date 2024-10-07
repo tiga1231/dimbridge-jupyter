@@ -201,17 +201,17 @@ export function update_brush_history(
     return sample_brush_history;
 }
 
-export function update_point_style(sca, mode = "confusion") {
-    let style = get_point_style(mode);
-    sca.update_style(style);
-    //raise
-    sca.selectAll(".point")
-        .filter((d) => d.brushed)
-        .raise();
-    sca.selectAll(".point")
-        .filter((d) => d.pred == 1 && d.selected) //true postives
-        .raise();
-}
+//export function update_point_style(sca, mode = "confusion") {
+//    let style = get_point_style(mode);
+//    sca.update_style(style);
+//    //raise
+//    sca.selectAll(".point")
+//        .filter((d) => d.brushed)
+//        .raise();
+//    sca.selectAll(".point")
+//        .filter((d) => d.pred == 1 && d.selected) //true postives
+//        .raise();
+//}
 
 export function update_point_style_gl(sca_gl, mode = "confusion") {
     let style = get_point_style(mode);

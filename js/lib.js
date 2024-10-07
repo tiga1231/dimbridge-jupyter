@@ -250,6 +250,11 @@ export function scatter_frame(
     return return_node;
 }
 
+export function hex2rgb(color) {
+    let c = d3.rgb(d3.color(color));
+    return [c.r, c.g, c.b];
+}
+
 export function color2gl(color) {
     let c;
     if (typeof color === "string") {

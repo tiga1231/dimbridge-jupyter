@@ -24,8 +24,7 @@ export class InteractionController {
         let subplot_limit = 9;
         let splom_attributes = predicate_attributes;
         splom_attributes = splom_attributes.slice(0, subplot_limit);
-        this.splom_view.draw(splom_attributes, predicates);
-        this.splom_view.recolor("selection"); //TODO: change brush brush_mode and switch redraw and recolor
+        this.splom_view.draw(splom_attributes, predicates, "selection");
     }
 
     on_predicate_view_change(data) {

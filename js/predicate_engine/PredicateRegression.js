@@ -18,7 +18,7 @@ export class PredicateRegression {
     //From brush data, produce predicates derived base on data extent only.
     //Front end only. No backend server
     constructor(data, attributes) {
-        console.log("DataExtentPredicate init");
+        console.log("PredicateRegression init");
 
         this.mode = "predicate regression";
         this.data = data;

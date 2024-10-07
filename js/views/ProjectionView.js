@@ -161,6 +161,9 @@ export default class ProjectionView {
             padding_top: this.padding_top,
             scales: {sc},
             is_square_scale: false,
+
+            xticks: this.config.xticks,
+            yticks: this.config.yticks,
         });
         this.sca.overlay.selectAll(".tick text").remove(); // remove tick marks as dim-reduction axes are arbitrary
         define_arrowhead(this.sca.overlay);
@@ -262,9 +265,10 @@ export default class ProjectionView {
             this.crossfilter_dimensions,
         );
 
-        if (this.n_boxes == 1 && this.predicate_mode === "data extent") {
-            update_point_style_gl(this.sca, "selection");
-        }
+        // if (this.n_boxes == 1 && this.predicate_mode === "data extent") {
+        update_point_style_gl(this.sca, "selection");
+        // }
+
         //draw fancy brush stroke (arrow, and shaded stroke)
         if (this.n_boxes == 2) {
             this.g_brush_path.call(draw_path, this.sample_brush_history, {
@@ -277,6 +281,7 @@ export default class ProjectionView {
                 "stroke-width": 3,
             });
         }
+
         //draw boxes in the main scatter plot
         draw_boxes(
             this.sca,

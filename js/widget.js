@@ -17,6 +17,7 @@ import {
     flexbox,
     numpy2array,
     pandas2array,
+    hex2rgb,
 } from "./lib.js";
 
 import ProjectionView from "./views/ProjectionView.js";
@@ -33,7 +34,6 @@ let config = {
     font_size: 16,
     gap: 10,
 
-    width: 900,
     scatter_padding: 1,
     scatter_width: 0.4,
     scatter_height: 0.4,
@@ -50,7 +50,13 @@ function initialize({model}) {
     let cell = d3.selectAll(".jp-OutputArea-output");
     let cell_width = parseFloat(cell.style("width")) || 1000;
     //set the dimbridge width to be Jupyter notebook cell width
-    config.width = cell_width - 18; //leave some space for shadow
+    config = {
+        ...config,
+        width: cell_width - 18, //leave some space for shadow
+        xticks: model.get("xticks"),
+        yticks: model.get("yticks"),
+    };
+    console.log("Widget Config:", config);
 }
 
 function cleanup() {
@@ -68,7 +74,24 @@ function render({model, el}) {
     let x = numpy2array(model.get("x"));
     let y = numpy2array(model.get("y"));
     let s = numpy2array(model.get("s"));
-    let c = numpy2array(model.get("c"));
+
+    let c = numpy2array(model.get("c")); // console.log("c", c);
+    if (typeof c[0] === "number") {
+        //if c is 1-d array, convert scalar values in c to 3-tuple rgb
+        let cmap = model.get("cmap");
+
+        let [vmin, vmax] = d3.extent(c);
+        function normalize(d, vmin, vmax) {
+            return (d - vmin) / (vmax - vmin + 1e-4);
+        }
+        cmap =
+            cmap === "viridis"
+                ? (x) => d3.interpolateViridis(normalize(x, vmin, vmax))
+                : (i) => d3.schemeCategory10[i];
+        c = c.map((d) => {
+            return hex2rgb(cmap(d));
+        });
+    }
 
     let predicate_mode = model.get("predicate_mode"); // 'data extent' or 'predicate regression'
     let brush_mode = model.get("brush_mode"); // 'single', 'contrastive' or 'curve'

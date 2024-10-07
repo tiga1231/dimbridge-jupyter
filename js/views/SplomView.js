@@ -19,34 +19,7 @@ import {
     create_canvas,
 } from "../lib.js";
 
-import {
-    // clear_path,
-    // clear_selected,
-    // define_arrowhead,
-    // draw_boxes,
-    draw_path,
-    // get_point_style,
-    // get_selected,
-    // set_pred,
-    // set_selected,
-    // set_selected_2,
-    // update_brush_history,
-    // update_point_style_gl,
-} from "./view-utils.js";
-
-import {
-    // define_arrowhead,
-    // compute_predicates,
-    // update_brush_history,
-    // clear_selected,
-    // set_selected,
-    // set_selected2,
-    // get_selected,
-    // update_point_style,
-    // draw_boxes,
-    // set_pred,
-    get_point_style,
-} from "./view-utils.js";
+import {draw_path, get_point_style} from "./view-utils.js";
 
 export default class SplomView {
     constructor(data, model, controller, config) {
@@ -123,7 +96,6 @@ export default class SplomView {
 
     recolor(mode = "selection") {
         let style = get_point_style(mode);
-        console.log(style);
         let depth = (d, i) =>
             d.brushed || d.first_brush || d.second_brush || d.pred || d.selected
                 ? -0.99
@@ -146,12 +118,20 @@ export default class SplomView {
         let n_boxes = predicates.length;
 
         this.predicate_mode = "data extent"; //TODO FIXME later
-        let color_mode =
-            n_boxes == 1 && this.predicate_mode !== "data extent"
-                ? "confusion"
-                : n_boxes == 2
-                  ? "contrastive"
-                  : "brush";
+        let color_mode;
+
+        if (n_boxes == 1) {
+            if (this.predicate_mode === "data extent") {
+                color_mode = "selection";
+            } else if (this.predicate_mode === "predicate regression") {
+                color_mode = "confusion";
+            }
+        } else if (n_boxes == 2) {
+            color_mode = "contrastive";
+        } else if (n_boxes > 2) {
+            color_mode = "brush";
+        }
+
         let style = get_point_style(color_mode);
         this.sc = (d, i) => style(d, i).fill;
 
@@ -166,38 +146,45 @@ export default class SplomView {
             }
         }
 
-        //draw splom
-        ////TODO make it more efficient without recreate canvas
-        this.splom.selectAll("*").remove();
-        console.log("splom removed and redrawn");
-        this.splom_obj = splom_gl2(this.splom, this.data, {
-            s: (d) => this.config.splom_mark_size, //size of circle marks
-            stroke: "#eee",
-            stroke_width: 0.5,
-            depth: (d, i) =>
-                d.brushed ||
-                d.first_brush ||
-                d.second_brush ||
-                d.pred ||
-                d.selected
-                    ? -0.99
-                    : i / this.data.length,
-            padding_left: this.padding_left,
-            padding_right: this.padding_right,
-            padding_bottom: this.padding_bottom,
-            padding_top: this.padding_top,
-            layout: "both", //'upper', 'lower', or 'both',
-            width: this.plot_width,
-            height: this.plot_width,
+        //draw SPLOM
+        if (this.splom_obj === undefined) {
+            // if (true) {
+            console.log("splom removed and redrawn");
+            this.splom.selectAll("*").remove();
+            this.splom_obj = splom_gl2(this.splom, this.data, {
+                s: (d) => this.config.splom_mark_size, //size of circle marks
+                stroke: "#eee",
+                stroke_width: 0.5,
+                depth: (d, i) =>
+                    d.brushed ||
+                    d.first_brush ||
+                    d.second_brush ||
+                    d.pred ||
+                    d.selected
+                        ? -0.99
+                        : i / this.data.length,
+                padding_left: this.padding_left,
+                padding_right: this.padding_right,
+                padding_bottom: this.padding_bottom,
+                padding_top: this.padding_top,
+                layout: "both", //'upper', 'lower', or 'both',
+                width: this.plot_width,
+                height: this.plot_width,
 
-            attrs: splom_attributes,
-            x_tickvalues: linspace(0, 1, 4),
-            ticks: 3,
-            wspace: 0.0, //splom_spacing,
-            hspace: 0.0, //splom_spacing,
-            scales: {sc: this.sc},
-            label_fontsize: 12,
-        });
+                attrs: splom_attributes,
+                x_tickvalues: linspace(0, 1, 4),
+                ticks: 3,
+                wspace: 0.0, //splom_spacing,
+                hspace: 0.0, //splom_spacing,
+                scales: {sc: this.sc},
+                label_fontsize: 12,
+            });
+            console.log("this.splom_obj", this.splom_obj);
+        } else {
+            console.log("Splom is not recreated, good job!");
+            console.log("color_mode", color_mode);
+            this.recolor("selection");
+        }
 
         //draw a predicate arrow path on each subplot of SPLOM
         if (n_boxes > 1) {
