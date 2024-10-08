@@ -14,17 +14,28 @@ export class InteractionController {
         this.splom_view = splom_view;
     }
 
-    on_projection_view_change(predicates) {
+    on_projection_view_brush_start() {
+        this.splom_view.hide_arrows();
+    }
+
+    on_predicate_view_brushed(predicates, data_size = 1000) {
+        let splom_attributes = Object.keys(predicates[0]);
+    }
+
+    on_projection_view_change(predicates, data_size = 1000) {
         //get projection view brush-selected data
         //start predicate computation
         //update predicate view
         this.predicate_view.draw(predicates);
+
         //update splom view
-        let predicate_attributes = Object.keys(predicates[0]);
-        let subplot_limit = 9;
-        let splom_attributes = predicate_attributes;
-        splom_attributes = splom_attributes.slice(0, subplot_limit);
-        this.splom_view.draw(splom_attributes, predicates, "selection");
+        if (data_size < 100000) {
+            let predicate_attributes = Object.keys(predicates[0]);
+            let subplot_limit = 9;
+            let splom_attributes = predicate_attributes;
+            splom_attributes = splom_attributes.slice(0, subplot_limit);
+            this.splom_view.draw(splom_attributes, predicates, "brush");
+        }
     }
 
     on_predicate_view_change(data) {

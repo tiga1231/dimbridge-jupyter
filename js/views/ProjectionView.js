@@ -24,7 +24,7 @@ import {
     draw_boxes,
     draw_path,
     get_point_style,
-    get_selected,
+    // get_selected,
     set_pred,
     set_selected,
     set_selected_2,
@@ -67,7 +67,11 @@ export default class ProjectionView {
         this.config = config;
         this.attributes = Object.keys(data[0]);
 
-        this.cf = this.init_crossfilter(data, this.attributes);
+        this.brush_cf = this.init_brush_crossfilter(data, this.attributes);
+        this.predicate_cf = this.init_predicate_crossfilter(
+            data,
+            this.attributes,
+        );
         this.node = this.init_node();
 
         this.draw();
@@ -75,15 +79,15 @@ export default class ProjectionView {
 
         this.predicate_engine = predicate_engine;
         this.predicate_mode = this.predicate_engine.mode; // TODO"predicate regression"
-        this.brush_mode = brush_mode; //TODO support "contrastive" and "curve"
+        this.brush_mode = brush_mode;
 
         return this;
     }
 
-    init_crossfilter(data, attributes) {
+    init_brush_crossfilter(data, attributes) {
         //Take all data and an awway of attribute strings
         //Returns
-        //this.crossfilter_dimensions - an object with keys being attributes,
+        //this.brush_cf_dimensions - an object with keys being attributes,
         //and values beinging the corresponding crossfilter dimension objects
         let cf_attributes = attributes.slice();
         let cf = crossfilter(data);
@@ -95,7 +99,23 @@ export default class ProjectionView {
             cf.dimension((d, i) => this.x[i]),
             cf.dimension((d, i) => this.y[i]),
         );
-        this.crossfilter_dimensions = Object.fromEntries(
+        this.brush_cf_dimensions = Object.fromEntries(
+            zip(cf_attributes, cf_dimensions),
+        );
+        return cf;
+    }
+
+    init_predicate_crossfilter(data, attributes) {
+        //Take all data and an awway of attribute strings
+        //Returns
+        //this.brush_cf_dimensions - an object with keys being attributes,
+        //and values beinging the corresponding crossfilter dimension objects
+        let cf_attributes = attributes.slice();
+        let cf = crossfilter(data);
+        let cf_dimensions = cf_attributes.map((attr) =>
+            cf.dimension((d) => d[attr]),
+        );
+        this.predicate_cf_dimensions = Object.fromEntries(
             zip(cf_attributes, cf_dimensions),
         );
         return cf;
@@ -211,7 +231,7 @@ export default class ProjectionView {
         clear_selected(this.data);
 
         //clear all cross filters
-        for (let dimension of Object.values(this.crossfilter_dimensions)) {
+        for (let dimension of Object.values(this.brush_cf_dimensions)) {
             dimension.filterAll();
         }
 
@@ -233,6 +253,7 @@ export default class ProjectionView {
                 this.n_boxes = 18;
             }
         }
+        this.controller.on_projection_view_brush_start();
     }
 
     async brushed(event) {
@@ -261,8 +282,8 @@ export default class ProjectionView {
         set_selected(
             this.data,
             this.sample_brush_history[this.sample_brush_history.length - 1],
-            this.cf,
-            this.crossfilter_dimensions,
+            this.brush_cf,
+            this.brush_cf_dimensions,
         );
 
         // if (this.n_boxes == 1 && this.predicate_mode === "data extent") {
@@ -303,11 +324,19 @@ export default class ProjectionView {
             let predicates = this.predicate_engine.compute_predicates([
                 last_brush,
             ]);
-            //TODO make is fast with this.cf
-            set_pred(this.data, predicates[0]);
+            set_pred(
+                this.data,
+                predicates[0],
+                this.predicate_cf,
+                this.predicate_cf_dimensions,
+            );
+
             update_point_style_gl(this.sca, "selection");
             //update other views
-            this.controller.on_projection_view_change(predicates);
+            this.controller.on_projection_view_change(
+                predicates,
+                this.data.length,
+            );
         }
     }
 
@@ -315,8 +344,8 @@ export default class ProjectionView {
         //sync with backend
         // let selected = d3
         //   .range(this.data.length)
-        //   .filter((d, i) => this.cf.isElementFiltered(i));
-        let selected = this.cf.allFiltered().map((d) => d.index);
+        //   .filter((d, i) => this.brush_cf.isElementFiltered(i));
+        let selected = this.brush_cf.allFiltered().map((d) => d.index);
         this.model.set("selected", selected);
         this.model.save_changes();
 
@@ -344,13 +373,13 @@ export default class ProjectionView {
                 set_selected_2(
                     this.data,
                     this.sample_brush_history,
-                    this.cf,
-                    this.crossfilter_dimensions,
+                    this.brush_cf,
+                    this.brush_cf_dimensions,
                 );
             }
         }
 
-        //compute predicates based on selected data
+        //compute predicates based on selected data points
         let predicates = this.predicate_engine.compute_predicates(
             this.sample_brush_history,
         );
@@ -358,7 +387,12 @@ export default class ProjectionView {
         if (predicates !== undefined && predicates.length >= 1) {
             //Color scatter plot points by false positives, false negatives, etc.
             let last_predicate = predicates[predicates.length - 1];
-            set_pred(this.data, last_predicate);
+            set_pred(
+                this.data,
+                last_predicate,
+                this.predicate_cf,
+                this.predicate_cf_dimensions,
+            );
 
             if (this.n_boxes == 1) {
                 if (this.predicate_mode === "data extent") {
@@ -376,8 +410,8 @@ export default class ProjectionView {
             }
 
             //update other views
-            console.log("predicates", predicates);
             this.controller.on_projection_view_change(predicates);
+
             // attributes,
             // qualities,
             // n_boxes: this.n_boxes,
@@ -389,8 +423,8 @@ export default class ProjectionView {
 
         //when brush get cleared, clear data selection and crossfilter
         if (event.selection === null) {
-            this.crossfilter_dimensions["x"].filterAll();
-            this.crossfilter_dimensions["y"].filterAll();
+            this.brush_cf_dimensions["x"].filterAll();
+            this.brush_cf_dimensions["y"].filterAll();
             clear_selected(this.data);
             //redraw
             let sc = (d) => d3.schemeCategory10[0];

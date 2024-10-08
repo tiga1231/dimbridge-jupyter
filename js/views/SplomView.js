@@ -94,12 +94,23 @@ export default class SplomView {
         return container_div.node();
     }
 
+    depth_func(mode) {
+        // 0 - near
+        // 1 - far
+        // d.brushed || d.first_brush || d.second_brush || d.pred || d.selected
+        if (mode == "selection") {
+            return (d, i) => (d.selected ? 0 : 0.9);
+        } else if (mode == "brush") {
+            return (d, i) => (d.brushed ? 0 : 0.9);
+        } else if (mode == "contrastive") {
+            return (d, i) => (d.first_brush ? 0.7 : d.second_brush ? 0 : 0.9);
+        } else if (mode == "confusion") {
+            return (d, i) => (d.pred ? 0 : 0.9);
+        }
+    }
+
     recolor(mode = "selection") {
         let style = get_point_style(mode);
-        let depth = (d, i) =>
-            d.brushed || d.first_brush || d.second_brush || d.pred || d.selected
-                ? -0.99
-                : i / this.data.length;
 
         let sc = (d, i) => style(d, i).fill;
         let sc_gl = (d, i) => {
@@ -107,13 +118,15 @@ export default class SplomView {
             return [...color2gl(c), 1.0];
         };
 
+        let depth = this.depth_func(mode);
         let new_colors = this.data.map((d, i) => sc_gl(d, i)); // array of RGBA tuples
         let new_depths = this.data.map((d, i) => depth(d, i));
         this.splom_obj.recolor(new_colors, {depths: new_depths});
     }
 
     draw(splom_attributes, predicates = []) {
-        console.log("splom_view.draw, predicates=", predicates);
+        console.log("SPLOM view drawing...");
+
         // let { n_boxes, predicates } = projection_view.value;
         let n_boxes = predicates.length;
 
@@ -148,21 +161,12 @@ export default class SplomView {
 
         //draw SPLOM
         if (this.splom_obj === undefined) {
-            // if (true) {
-            console.log("splom removed and redrawn");
             this.splom.selectAll("*").remove();
             this.splom_obj = splom_gl2(this.splom, this.data, {
                 s: (d) => this.config.splom_mark_size, //size of circle marks
                 stroke: "#eee",
                 stroke_width: 0.5,
-                depth: (d, i) =>
-                    d.brushed ||
-                    d.first_brush ||
-                    d.second_brush ||
-                    d.pred ||
-                    d.selected
-                        ? -0.99
-                        : i / this.data.length,
+                depth: this.depth_func(color_mode),
                 padding_left: this.padding_left,
                 padding_right: this.padding_right,
                 padding_bottom: this.padding_bottom,
@@ -179,21 +183,32 @@ export default class SplomView {
                 scales: {sc: this.sc},
                 label_fontsize: 12,
             });
-            console.log("this.splom_obj", this.splom_obj);
         } else {
-            console.log("Splom is not recreated, good job!");
-            console.log("color_mode", color_mode);
-            this.recolor("selection");
+            this.recolor(color_mode);
         }
 
         //draw a predicate arrow path on each subplot of SPLOM
         if (n_boxes > 1) {
-            console.log("splom_view drawing arrows");
             this.draw_predicate_arrows(
                 this.splom_obj.subplots,
                 predicates,
                 splom_attributes,
             );
+        }
+    }
+
+    hide_arrows() {
+        if (this.splom_obj == undefined) {
+            return;
+        }
+        let subplots = this.splom_obj.subplots;
+        for (let i = 0; i < subplots.length; i++) {
+            for (let j = 0; j < subplots[0].length; j++) {
+                if (subplots[i][j] === undefined) continue;
+                subplots[i][j].overlay
+                    .selectAll("g.brush-path")
+                    .attr("display", "none");
+            }
         }
     }
 

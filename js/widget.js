@@ -41,7 +41,7 @@ let config = {
     predicate_view_subplot_height: 20,
     predicate_view_fontsize: 14,
 
-    splom_mark_size: 4,
+    splom_mark_size: 10,
 };
 
 // widget

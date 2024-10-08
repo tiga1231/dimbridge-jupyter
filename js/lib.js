@@ -150,6 +150,8 @@ export function create_scatter_gl_program(regl) {
           vec4(u_stroke, 1.0), 
           mix_factor
       );
+      // debug depth:
+      // gl_FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
       float alpha = 1.0 - smoothstep(1.0-stroke+stroke*0.8, 1.0, dist);
       gl_FragColor.a = alpha;
       //}
@@ -170,6 +172,13 @@ export function create_scatter_gl_program(regl) {
         primitive: "points",
         vert,
         frag,
+
+        // depth: {
+        //     enable: true,
+        //     mask: true,
+        //     func: "<=",
+        //     range: [0, 1],
+        // },
 
         //alpha blend
         blend: {
@@ -698,6 +707,7 @@ export function splom_gl2(
                     };
 
                     plot.recolor = (colors, {depths} = {}) => {
+                        console.log("depth", depths);
                         _render({
                             positions: data.map((d) => [
                                 sx_gl(d[attrs[j]]),

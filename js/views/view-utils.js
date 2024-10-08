@@ -22,20 +22,13 @@ import {
     overflow_box,
 } from "../lib.js";
 
-export function set_pred(data, predicate) {
-    // compute prediction from given predicate
-    // and set to d.pred for each item in data
+export function set_pred(data, predicate, cf, crossfilter_dimensions) {
+    let cd = crossfilter_dimensions;
+    for (let attr of Object.keys(predicate)) {
+        cd[attr].filter(predicate[attr]);
+    }
     data.forEach((d, i) => {
-        d.pred = true;
-        for (let attr of Object.keys(predicate)) {
-            let [a0, a1] = predicate[attr];
-            if (d[attr] < a0 || d[attr] > a1) {
-                // if ever d[attr] falls outside of predicate[attr] interval,
-                // it is considered unselected/false by predicate
-                d.pred = false;
-                break;
-            }
-        }
+        d.pred = cf.isElementFiltered(i);
     });
 }
 
