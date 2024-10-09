@@ -29,32 +29,36 @@ let cell_width;
 
 // layout config
 let config = {
+    //between-view configs
     margin_outer: 10,
     margin_inner: 4,
     font_size: 16,
     gap: 10,
 
+    //projection view
     scatter_padding: 1,
     scatter_width: 0.4,
     scatter_height: 0.4,
 
+    //predicate view
     predicate_view_subplot_height: 20,
     predicate_view_fontsize: 14,
-
-    splom_mark_size: 10,
 };
 
 // widget
 function initialize({model}) {
     console.log("DimBridge init");
+    //set the dimbridge width to be Jupyter notebook cell width
     let cell = d3.selectAll(".jp-OutputArea-output");
     let cell_width = parseFloat(cell.style("width")) || 1000;
-    //set the dimbridge width to be Jupyter notebook cell width
+
+    //other configs from python side
     config = {
         ...config,
         width: cell_width - 18, //leave some space for shadow
         xticks: model.get("xticks"),
         yticks: model.get("yticks"),
+        splom_mark_size: model.get("splom_mark_size"),
     };
     console.log("Widget Config:", config);
 }
@@ -63,6 +67,7 @@ function cleanup() {
     // Optional. Cleanup callback.
     // Executed any time the view is removed from the DOM
 }
+
 function render({model, el}) {
     let width = cell_width;
     console.log("DimBridge render", model, el);
@@ -70,24 +75,28 @@ function render({model, el}) {
     //get data from python
     let data = pandas2array(model.get("data"));
     let attributes = Object.keys(data[0]);
-
     let x = numpy2array(model.get("x"));
     let y = numpy2array(model.get("y"));
-    let s = numpy2array(model.get("s"));
 
-    let c = numpy2array(model.get("c")); // console.log("c", c);
+    //augment data object
+    data.forEach((d, i) => {
+        d.x = x[i];
+        d.y = y[i];
+        d.index = i;
+    });
+
+    let s = numpy2array(model.get("s")); //mark size, array of numbers
+    let c = numpy2array(model.get("c")); //mark color, array of 3-tuples [r,g,b], or array of numbers
+
     if (typeof c[0] === "number") {
         //if c is 1-d array, convert scalar values in c to 3-tuple rgb
         let cmap = model.get("cmap");
-
         let [vmin, vmax] = d3.extent(c);
-        function normalize(d, vmin, vmax) {
-            return (d - vmin) / (vmax - vmin + 1e-4);
+        if (cmap === "viridis") {
+            cmap = (x) => d3.interpolateViridis(normalize(x, vmin, vmax));
+        } else if (cmap === "set10") {
+            cmap = (i) => d3.schemeCategory10[i];
         }
-        cmap =
-            cmap === "viridis"
-                ? (x) => d3.interpolateViridis(normalize(x, vmin, vmax))
-                : (i) => d3.schemeCategory10[i];
         c = c.map((d) => {
             return hex2rgb(cmap(d));
         });
@@ -95,12 +104,6 @@ function render({model, el}) {
 
     let predicate_mode = model.get("predicate_mode"); // 'data extent' or 'predicate regression'
     let brush_mode = model.get("brush_mode"); // 'single', 'contrastive' or 'curve'
-
-    data.forEach((d, i) => {
-        d.x = x[i];
-        d.y = y[i];
-        d.index = i;
-    });
 
     // predicate
     let predicate_engine =
@@ -143,19 +146,6 @@ function render({model, el}) {
 
     el.appendChild(return_node);
     return cleanup;
-
-    ////color scale
-    //let sc;
-    //if (model.get("c").dtype.includes("int")) {
-    //    //discrete color scale
-    //    sc = (d, i) => C[c[i]];
-    //} else {
-    //    //continuous color scale
-    //    let vmin = math.min(c);
-    //    let vmax = math.max(c);
-    //    let vdiff = vmax - vmin;
-    //    sc = (d, i) => d3.interpolateViridis((d.c - vmin) / vdiff);
-    //}
 
     //model.on("change:x", function () {
     //    console.log(arguments);

@@ -47,6 +47,10 @@ class Dimbridge(anywidget.AnyWidget):
     y = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)
     c = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark color
     s = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark size
+
+    # splom mark size
+    splom_mark_size = Float(6.0).tag(sync=True)
+
     # color map
     cmap = Enum(["viridis", "set10"], default_value="viridis").tag(sync=True)
 

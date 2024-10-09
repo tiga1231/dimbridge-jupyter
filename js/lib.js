@@ -20,6 +20,10 @@ const pyplot_cycles = [
 export const C = pyplot_cycles;
 
 // --------------- data utils ---------------
+export function normalize(d, vmin, vmax, eps = 1e-4) {
+    return (d - vmin) / (vmax - vmin + eps);
+}
+
 export function pandas2array(data_obj) {
     //parse individual column data from DataView to arrays
     for (let j = 0; j < data_obj.shape[1]; j++) {
@@ -448,6 +452,7 @@ export function scatter_gl(
             depth,
         });
     };
+
     res.redraw = (data) => {
         res.render({
             // attributes
@@ -459,6 +464,7 @@ export function scatter_gl(
             stroke_width,
         });
     };
+
     res.recolor = (new_sc) => {
         // update color scale
         sc = new_sc;
@@ -707,7 +713,6 @@ export function splom_gl2(
                     };
 
                     plot.recolor = (colors, {depths} = {}) => {
-                        console.log("depth", depths);
                         _render({
                             positions: data.map((d) => [
                                 sx_gl(d[attrs[j]]),
@@ -744,6 +749,8 @@ export function splom_gl2(
             stencil: 0,
         });
     };
+
+    // the entire splom recolor
     return_node.recolor = (colors, {depths} = {}) => {
         return_node.clear();
         return_node.subplots.flat().forEach((subplot, i) => {
