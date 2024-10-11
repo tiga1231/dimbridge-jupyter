@@ -1,10 +1,21 @@
+function same_key(a, b) {
+    return same_set(new Set(Object.keys(a)), new Set(Object.keys(b)));
+}
+
+function same_set(xs, ys) {
+    return xs.size === ys.size && [...xs].every((x) => ys.has(x));
+}
+
 export class InteractionController {
     //fields
     projection_view;
     predicate_view;
     splom_view;
+    predicates_prev;
 
     constructor() {
+        this.predicates_prev = undefined;
+
         return this;
     }
 
@@ -31,11 +42,24 @@ export class InteractionController {
         //update splom view
         if (data_size < 100000) {
             let predicate_attributes = Object.keys(predicates[0]);
-            let subplot_limit = 9;
+            let subplot_limit = 7;
             let splom_attributes = predicate_attributes;
             splom_attributes = splom_attributes.slice(0, subplot_limit);
-            this.splom_view.draw(splom_attributes, predicates, "brush");
+
+            //force redraw SPLOM if predicates are different
+            if (
+                this.predicates_prev !== undefined &&
+                !same_key(this.predicates_prev[0], predicates[0])
+            ) {
+                console.log("NOT SAME KEY!!!");
+                this.splom_view.splom_obj = undefined;
+                this.splom_view.draw(splom_attributes, predicates, "brush");
+            } else {
+                // this will only recolor
+                this.splom_view.draw(splom_attributes, predicates, "brush");
+            }
         }
+        this.predicates_prev = predicates;
     }
 
     on_predicate_view_change(data) {

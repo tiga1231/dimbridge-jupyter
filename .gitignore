@@ -10,3 +10,4 @@ __pycache__
 
 # bundle output
 src/dimbridge/static
+datasets/

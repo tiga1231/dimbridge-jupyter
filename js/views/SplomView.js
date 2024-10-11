@@ -19,7 +19,7 @@ import {
     create_canvas,
 } from "../lib.js";
 
-import {draw_path, get_point_style} from "./view-utils.js";
+import {draw_path, get_point_style, depth_func} from "./view-utils.js";
 
 export default class SplomView {
     constructor(data, model, controller, config) {
@@ -41,16 +41,15 @@ export default class SplomView {
             scatter_width,
             scatter_height,
             font_size,
-            scatter_padding,
             gap,
             predicate_view_subplot_height,
             margin_outer,
             margin_inner,
             splom_mark_size,
+            splom_spacing,
         } = this.config;
 
         //gap between subplots in splot, measured in proportion (0 to 1) to the size of a subplot
-        let splom_spacing = 0.03;
         this.plot_width = width * scatter_width - gap; //width of main scatter plot and SPLOM
         this.plot_height = width * scatter_height + 2.6 * font_size;
 
@@ -62,10 +61,10 @@ export default class SplomView {
         let margin_right = margin_inner;
 
         //paddings controls how much space we give the scatter plot within the frame.
-        this.padding_left = scatter_padding;
-        this.padding_right = scatter_padding;
-        this.padding_bottom = scatter_padding;
-        this.padding_top = scatter_padding;
+        this.padding_left = splom_spacing;
+        this.padding_right = splom_spacing;
+        this.padding_bottom = splom_spacing;
+        this.padding_top = splom_spacing;
 
         let container_div = d3
             .create("div")
@@ -94,21 +93,6 @@ export default class SplomView {
         return container_div.node();
     }
 
-    depth_func(mode) {
-        // 0 - near
-        // 1 - far
-        // d.brushed || d.first_brush || d.second_brush || d.pred || d.selected
-        if (mode == "selection") {
-            return (d, i) => (d.selected ? 0 : 0.9);
-        } else if (mode == "brush") {
-            return (d, i) => (d.brushed ? 0 : 0.9);
-        } else if (mode == "contrastive") {
-            return (d, i) => (d.first_brush ? 0.7 : d.second_brush ? 0 : 0.9);
-        } else if (mode == "confusion") {
-            return (d, i) => (d.pred ? 0 : 0.9);
-        }
-    }
-
     recolor(mode = "selection") {
         let style = get_point_style(mode);
 
@@ -118,7 +102,7 @@ export default class SplomView {
             return [...color2gl(c), 1.0];
         };
 
-        let depth = this.depth_func(mode);
+        let depth = depth_func(mode);
         let new_colors = this.data.map((d, i) => sc_gl(d, i)); // array of RGBA tuples
         let new_depths = this.data.map((d, i) => depth(d, i));
         this.splom_obj.recolor(new_colors, {depths: new_depths});
@@ -148,25 +132,27 @@ export default class SplomView {
         let style = get_point_style(color_mode);
         this.sc = (d, i) => style(d, i).fill;
 
-        if (predicates !== undefined) {
-            //attach dummy ranges if certain clause doesn't exist for some brush t
-            for (let predicate_t of predicates) {
-                for (let attr of splom_attributes) {
-                    if (!(attr in predicate_t)) {
-                        predicate_t[attr] = extent[attr];
-                    }
-                }
-            }
-        }
+        //if (predicates !== undefined) {
+        //    //attach dummy ranges if certain clause doesn't exist for some brush t
+        //    for (let predicate_t of predicates) {
+        //        for (let attr of splom_attributes) {
+        //            if (!(attr in predicate_t)) {
+        //                predicate_t[attr] = extent[attr];
+        //            }
+        //        }
+        //    }
+        //}
 
         //draw SPLOM
         if (this.splom_obj === undefined) {
+            console.log("SPLOM redrawing...");
+            console.log("attributes", splom_attributes);
             this.splom.selectAll("*").remove();
             this.splom_obj = splom_gl2(this.splom, this.data, {
                 s: (d) => this.config.splom_mark_size, //size of circle marks
                 stroke: "#eee",
                 stroke_width: 0.5,
-                depth: this.depth_func(color_mode),
+                depth: depth_func(color_mode),
                 padding_left: this.padding_left,
                 padding_right: this.padding_right,
                 padding_bottom: this.padding_bottom,
@@ -176,10 +162,10 @@ export default class SplomView {
                 height: this.plot_width,
 
                 attrs: splom_attributes,
-                x_tickvalues: linspace(0, 1, 4),
+                // x_tickvalues: linspace(0, 1, 4),
                 ticks: 3,
-                wspace: 0.0, //splom_spacing,
-                hspace: 0.0, //splom_spacing,
+                wspace: this.config.splom_spacing,
+                hspace: this.config.splom_spacing,
                 scales: {sc: this.sc},
                 label_fontsize: 12,
             });

@@ -177,12 +177,12 @@ export function create_scatter_gl_program(regl) {
         vert,
         frag,
 
-        // depth: {
-        //     enable: true,
-        //     mask: true,
-        //     func: "<=",
-        //     range: [0, 1],
-        // },
+        depth: {
+            enable: true,
+            mask: true,
+            func: "<",
+            range: [0, 1],
+        },
 
         //alpha blend
         blend: {
@@ -272,10 +272,38 @@ export function color2gl(color) {
     let c;
     if (typeof color === "string") {
         c = d3.rgb(d3.color(color));
-    } else {
-        c = d3.rgb(...color);
+    } else if (typeof color === "object") {
+        if (color.length !== undefined) {
+            //3-tuple
+            c = d3.rgb(...color);
+        } else {
+            //rgb object
+            c = color;
+        }
     }
     return [c.r / 255, c.g / 255, c.b / 255];
+}
+
+export function clip(value, vmin, vmax) {
+    return Math.min(Math.max(vmin, value), vmax);
+}
+
+export function fetch_json(url, {body = null, callback = (json) => json} = {}) {
+    let args = {
+        method: body === null ? "GET" : "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        // mode: "cors",
+    };
+    if (body !== null) {
+        args.body = JSON.stringify(body);
+    }
+    return fetch(`${url}`, args)
+        .then((response) => response.json())
+        .then((arr) => {
+            return callback(arr);
+        });
 }
 
 export function create_canvas(width, height, dpi_scale = 1.0) {
@@ -465,7 +493,7 @@ export function scatter_gl(
         });
     };
 
-    res.recolor = (new_sc) => {
+    res.recolor = (new_sc, {depth} = {}) => {
         // update color scale
         sc = new_sc;
         sc_gl = (d, i) => {
@@ -502,14 +530,14 @@ export function splom_gl2(
         //Show histogram on the diagonal or not.
         //Currently, this only affects the layout and plotting histogram is not supported yet
         // histogram = false, //TODO
-        layout = "both", //'lower', 'upper' or 'both'
+        layout = "upper", //'lower', 'upper' or 'both'
         // margin_left = 600,
         padding_left = 2,
         padding_right = 2,
         padding_bottom = 2,
         padding_top = 2,
-        wspace = 0.01, //The amount of width reserved for space between subplots. Similar to pyplot
-        hspace = 0.01,
+        wspace = 0.1, //The amount of width reserved for space between subplots. Similar to pyplot
+        hspace = 0.1,
 
         //x and y axes
         scales = {sc: undefined}, // todo: flexible for individual subplots

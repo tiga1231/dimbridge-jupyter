@@ -24,12 +24,12 @@ import {
     draw_boxes,
     draw_path,
     get_point_style,
-    // get_selected,
     set_pred,
     set_selected,
     set_selected_2,
     update_brush_history,
     update_point_style_gl,
+    depth_func,
 } from "./view-utils.js";
 
 export default class ProjectionView {
@@ -171,7 +171,7 @@ export default class ProjectionView {
         this.sca = scatter_gl(d3.select(this.node), data, {
             x: (d, i) => this.x[i],
             y: (d, i) => this.y[i],
-            s: (d, i) => this.s[i],
+            s: (d, i) => this.s,
             stroke_width: 1.5,
             width: this.plot_width,
             height: this.plot_height,
@@ -180,7 +180,7 @@ export default class ProjectionView {
             padding_bottom: this.padding_bottom,
             padding_top: this.padding_top,
             scales: {sc},
-            is_square_scale: false,
+            is_square_scale: true,
 
             xticks: this.config.xticks,
             yticks: this.config.yticks,
@@ -250,7 +250,7 @@ export default class ProjectionView {
             } else if (this.brush_mode == "contrastive") {
                 this.n_boxes = 2;
             } else if (this.brush_mode == "curve") {
-                this.n_boxes = 18;
+                this.n_boxes = 12;
             }
         }
         this.controller.on_projection_view_brush_start();
@@ -287,7 +287,7 @@ export default class ProjectionView {
         );
 
         // if (this.n_boxes == 1 && this.predicate_mode === "data extent") {
-        update_point_style_gl(this.sca, "selection");
+        // update_point_style_gl(this.sca, "confusion");
         // }
 
         //draw fancy brush stroke (arrow, and shaded stroke)
@@ -327,6 +327,7 @@ export default class ProjectionView {
             set_pred(
                 this.data,
                 predicates[0],
+                this.attributes,
                 this.predicate_cf,
                 this.predicate_cf_dimensions,
             );
@@ -380,7 +381,7 @@ export default class ProjectionView {
         }
 
         //compute predicates based on selected data points
-        let predicates = this.predicate_engine.compute_predicates(
+        let predicates = await this.predicate_engine.compute_predicates(
             this.sample_brush_history,
         );
 
@@ -390,6 +391,7 @@ export default class ProjectionView {
             set_pred(
                 this.data,
                 last_predicate,
+                this.attributes,
                 this.predicate_cf,
                 this.predicate_cf_dimensions,
             );
@@ -409,16 +411,8 @@ export default class ProjectionView {
                 update_point_style_gl(this.sca, "brush");
             }
 
-            //update other views
+            //inform other views
             this.controller.on_projection_view_change(predicates);
-
-            // attributes,
-            // qualities,
-            // n_boxes: this.n_boxes,
-            // full_brush_history: this.full_brush_history,
-            // sample_brush_history: this.sample_brush_history,
-            // x: (d, i) => this.x[i],
-            // y: (d, i) => this.y[i],
         }
 
         //when brush get cleared, clear data selection and crossfilter
@@ -428,7 +422,7 @@ export default class ProjectionView {
             clear_selected(this.data);
             //redraw
             let sc = (d) => d3.schemeCategory10[0];
-            this.sca.recolor(sc);
+            this.sca.recolor(sc, {depth: depth_func("selection")});
         }
     }
 

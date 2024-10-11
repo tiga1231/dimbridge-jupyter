@@ -22,10 +22,20 @@ import {
     overflow_box,
 } from "../lib.js";
 
-export function set_pred(data, predicate, cf, crossfilter_dimensions) {
+export function set_pred(
+    data,
+    predicate,
+    all_attributes,
+    cf,
+    crossfilter_dimensions,
+) {
     let cd = crossfilter_dimensions;
-    for (let attr of Object.keys(predicate)) {
-        cd[attr].filter(predicate[attr]);
+    for (let attr of all_attributes) {
+        if (attr in predicate) {
+            cd[attr].filter([predicate[attr][0], predicate[attr][1] + 1e-4]);
+        } else {
+            cd[attr].filterAll();
+        }
     }
     data.forEach((d, i) => {
         d.pred = cf.isElementFiltered(i);
@@ -149,19 +159,6 @@ export function subsample(array, limit = 10) {
     }
 }
 
-export function get_selected(data, brush_data, {x, y} = {}) {
-    //return list of boolean based on brush selection
-    // x, y are coordinate getter functions for points in data
-    let {x_extent, y_extent} = brush_data;
-    let [x0, x1] = x_extent;
-    let [y0, y1] = y_extent;
-    return data.map((d, i) => {
-        let xi = x(d, i);
-        let yi = y(d, i);
-        return x0 < xi && xi < x1 && y0 < yi && yi < y1;
-    });
-}
-
 export function define_arrowhead(svg) {
     //def #arrowhead
     let marker_style = {w: 4, h: 4};
@@ -206,25 +203,82 @@ export function update_brush_history(
 //        .raise();
 //}
 
+//export function get_selected(data, brush_data, {x, y} = {}) {
+//    //return list of boolean based on brush selection
+//    // x, y are coordinate getter functions for points in data
+//    let {x_extent, y_extent} = brush_data;
+//    let [x0, x1] = x_extent;
+//    let [y0, y1] = y_extent;
+//    return data.map((d, i) => {
+//        let xi = x(d, i);
+//        let yi = y(d, i);
+//        return x0 < xi && xi < x1 && y0 < yi && yi < y1;
+//    });
+//}
+
+export function get_selected(data, brush_data, cf, dim_x, dim_y) {
+    //return list of boolean based on brush selection
+    // x, y are coordinate getter functions for points in data
+    let {x_extent, y_extent} = brush_data;
+    let [x0, x1] = x_extent;
+    let [y0, y1] = y_extent;
+    dim_x.filter([x0, x1]);
+    dim_y.filter([y0, y1]);
+    // return cf.filterAll();
+    return data.map((_, i) => cf.isElementFiltered(i));
+}
+
 export function update_point_style_gl(sca_gl, mode = "confusion") {
     let style = get_point_style(mode);
     let sc = (d, i) => style(d, i).fill;
-    sca_gl.recolor(sc);
+    let depth = depth_func(mode); //(d, i) => i / 100,
+    sca_gl.recolor(sc, {depth});
+}
+
+export function depth_func(mode) {
+    // 0 - near
+    // 1 - far
+    // d.brushed || d.first_brush || d.second_brush || d.pred || d.selected
+    if (mode == "selection") {
+        return (d, i) => (d.selected ? 0 : 0.9);
+    } else if (mode == "brush") {
+        return (d, i) => (d.brushed ? 0 : 0.9);
+    } else if (mode == "contrastive") {
+        return (d, i) => (d.first_brush ? 0.7 : d.second_brush ? 0 : 0.9);
+    } else if (mode == "confusion") {
+        return (d, i) => {
+            if (d.pred && d.selected) {
+                return 0.3;
+            } else if (d.pred && !d.selected) {
+                return 0.1;
+            } else if (!d.pred && d.selected) {
+                return 0.1;
+            } else if (!d.pred && !d.selected) {
+                return 0.5;
+            }
+        };
+    }
 }
 
 export function get_point_style(mode = "confusion") {
     let style;
     if (mode === "confusion") {
         //set style - color by confusion (tp, tn, fp, fn)
-        style = (d, i) =>
-            d.pred && d.selected //tp = true positive
-                ? {fill: d3.rgb(116, 43, 122), stroke: "#eee"}
-                : !d.pred && !d.selected //tn
-                  ? {fill: d3.rgb(204, 204, 204), stroke: "#eee"}
-                  : !d.pred && d.selected //fn
-                    ? {fill: d3.rgb(49, 111, 200), stroke: "#eee"}
-                    : //fp
-                      {fill: d3.rgb(167, 61, 47), stroke: "#eee"};
+        style = (d, i) => {
+            if (d.pred && d.selected) {
+                //tp = true positive
+                return {fill: "#742B70", stroke: "#eee"};
+            } else if (!d.pred && !d.selected) {
+                //tn
+                return {fill: "#CCCCCC", stroke: "#eee"};
+            } else if (!d.pred && d.selected) {
+                //fn
+                return {fill: "#310BC8", stroke: "#eee"};
+            } else {
+                //fp
+                return {fill: "#A73D2F", stroke: "#eee"};
+            }
+        };
     } else if (mode === "selection") {
         //color by selected vs. unselected
         style = (d, i) =>

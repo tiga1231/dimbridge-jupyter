@@ -18,6 +18,7 @@ import {
     numpy2array,
     pandas2array,
     hex2rgb,
+    normalize,
 } from "./lib.js";
 
 import ProjectionView from "./views/ProjectionView.js";
@@ -36,13 +37,15 @@ let config = {
     gap: 10,
 
     //projection view
-    scatter_padding: 1,
+    scatter_padding: 14,
     scatter_width: 0.4,
     scatter_height: 0.4,
 
     //predicate view
-    predicate_view_subplot_height: 20,
-    predicate_view_fontsize: 14,
+    predicate_view_subplot_height: 50,
+    predicate_view_fontsize: 12,
+
+    splom_spacing: 4,
 };
 
 // widget
@@ -77,6 +80,8 @@ function render({model, el}) {
     let attributes = Object.keys(data[0]);
     let x = numpy2array(model.get("x"));
     let y = numpy2array(model.get("y"));
+    let c = numpy2array(model.get("c")); //mark color, array of 3-tuples [r,g,b], or array of numbers
+    let s = model.get("s"); //mark size, array of numbers
 
     //augment data object
     data.forEach((d, i) => {
@@ -84,9 +89,6 @@ function render({model, el}) {
         d.y = y[i];
         d.index = i;
     });
-
-    let s = numpy2array(model.get("s")); //mark size, array of numbers
-    let c = numpy2array(model.get("c")); //mark color, array of 3-tuples [r,g,b], or array of numbers
 
     if (typeof c[0] === "number") {
         //if c is 1-d array, convert scalar values in c to 3-tuple rgb
@@ -109,7 +111,7 @@ function render({model, el}) {
     let predicate_engine =
         predicate_mode === "data extent"
             ? new DataExtentPredicate(data, attributes)
-            : new PredicateRegression(data, attributes);
+            : new PredicateRegression(data, attributes, model);
 
     //init controller
     let controller = new InteractionController();

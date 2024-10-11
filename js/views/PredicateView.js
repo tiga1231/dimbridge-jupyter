@@ -13,6 +13,7 @@ import {
     zip,
     scatter,
     overflow_box,
+    clip,
 } from "../lib.js";
 
 import {get_selected} from "./view-utils.js";
@@ -33,10 +34,12 @@ export default class PredicateView {
         this.config = config;
 
         this.extent = Object.fromEntries(
-            Object.keys(data[0]).map((attr) => [
-                attr,
-                d3.extent(data, (d) => d[attr]),
-            ]),
+            Object.keys(data[0]).map((attr) => {
+                let ex = d3.extent(data, (d) => d[attr]);
+                ex[0] = Number(ex[0]);
+                ex[1] = Number(ex[1]);
+                return [attr, ex];
+            }),
         );
         this.node = this.init_node();
         return this;
@@ -136,7 +139,7 @@ export default class PredicateView {
                 width: this.plot_width,
                 height: this.plot_height,
                 font_size: this.config.predicate_view_fontsize,
-                subplot_height: this.config.predicate_view_subplot_height,
+                // subplot_height: this.config.predicate_view_subplot_height,
                 x_shift: this.plot_width,
             };
 
@@ -164,32 +167,7 @@ export default class PredicateView {
                 );
             }
 
-            //draw predicate view
-            let should_draw_images = this.data[0].image_url !== undefined;
-            if (n_boxes == 1) {
-                // let selected_data = get_selected(
-                //     this.data,
-                //     sample_brush_history[sample_brush_history.length - 1],
-                //     {x, y},
-                // );
-                this.view_g.draw(
-                    predicates,
-                    attributes,
-                    // selected_data,
-                    // should_draw_images,
-                );
-            } else if (n_boxes == 2) {
-                let selected_TODO = undefined;
-                this.view_g.draw(
-                    predicates,
-                    attributes,
-                    n_boxes,
-                    selected_TODO,
-                    should_draw_images,
-                );
-            } else {
-                this.view_g.draw(predicates, attributes, n_boxes);
-            }
+            this.view_g.draw(predicates, attributes);
         }
     }
 }
@@ -201,9 +179,11 @@ function predicate_single(
     {
         width = 100,
         height = 100,
-        padding_top = 2,
-        font_size = 12,
-        subplot_height = 20,
+        padding_top = 10,
+        padding_left = 10,
+        padding_right = 10,
+        font_size = 10,
+        subplot_height = 40,
     } = {},
 ) {
     g_container.selectAll("g.predicate-view").remove(); //clear itself, keep the fancy frame
@@ -227,36 +207,43 @@ function predicate_single(
         let attribute_text_max_length = d3.max(attributes, (d) => d.length);
 
         //origin at interval min
-        let interval_start_x = font_size * (2 + attribute_text_max_length); //width/2.5;
+        let interval_start_x = padding_left + 10;
+        let interval_stop_x = width - interval_start_x;
+        // font_size * 0.5 * (2 + attribute_text_max_length);
 
         let sx = d3
             .scaleLinear()
             .domain([0, 1])
-            .range([interval_start_x, width - 19]);
+            .range([interval_start_x, interval_stop_x]);
         let sy = d3
             .scaleLinear()
             .domain([0, n_attributes])
-            .range([
-                padding_top + 12,
-                padding_top + 12 + n_attributes * subplot_height,
-            ]);
+            .range([padding_top, padding_top + n_attributes * subplot_height]);
 
-        let interval_data = attributes.map((a) => ({
-            attr: a,
-            vmin: extent[a][0] - 1e-6,
-            vmax: extent[a][1] + 1e-6,
-            interval_min: predicate[a][0],
-            interval_max: predicate[a][1],
-        }));
-
-        g.call(draw_background_rect, {
-            top: sy(0) - 16,
-            left: 6,
-            height: n_attributes * subplot_height + 10,
-            width: width - 6 * 2,
+        let interval_data = attributes.map((a) => {
+            return {
+                attr: a,
+                vmin: extent[a][0] - 1e-6,
+                vmax: extent[a][1] + 1e-6,
+                interval_min: predicate[a][0],
+                interval_max: predicate[a][1],
+            };
         });
 
-        //draw the interval bars
+        //background rect
+        let intervals_g = g
+            .selectAll(".bg-rect")
+            .data(interval_data)
+            .join("rect")
+            .attr("class", "bg-rect")
+            .attr("x", padding_left)
+            .attr("y", (d, i) => sy(i) - 15)
+            .attr("width", width - padding_left - padding_right)
+            .attr("height", subplot_height - 5) //n_attributes * subplot_height + 10)
+            .attr("rx", 4)
+            .attr("fill", "#eee");
+
+        // draw the interval bars
         let intervals_bg = g
             .selectAll(".interval-bg")
             .data(interval_data)
@@ -269,6 +256,7 @@ function predicate_single(
             .attr("stroke-linecap", "round")
             .attr("stroke", "#fff")
             .attr("stroke-width", 10);
+
         let intervals_fg = g
             .selectAll(".interval-fg")
             .data(interval_data)
@@ -362,49 +350,24 @@ function predicate_single(
                 drag_max.on("drag")();
             }),
         );
+
         let labels = g
             .selectAll(".label")
             .data(attributes)
             .join("text")
             .attr("class", "label")
-            .attr("x", interval_start_x - 14)
-            .attr("y", (d, i) => sy(i) + font_size / 3)
-            .attr("text-anchor", "end")
+            .attr("x", (interval_start_x + interval_stop_x) / 2)
+            .attr("y", (d, i) => sy(i) + font_size * 1.5)
+            .attr("text-anchor", "middle")
+            .attr("fill", "#888")
             // .attr("alignment-baseline", "central")
             .style("font-size", `${font_size}px`)
+            .style("text-transform", "uppercase")
+            .style("font-family", "sans-serif")
+            .style("font-weight", 600)
+            .style("font-style", "italic")
+            .style("opacity", 0.7)
             .text((d) => d);
-
-        //draw images
-        // if (selected && should_draw_images) {
-        //     let n_cols = 2,
-        //         remaining_height = height - sy.range()[1],
-        //         pad = 5,
-        //         actual_width = width - 2 * pad,
-        //         img_size = actual_width / 2;
-        //     let n_rows = Math.floor(remaining_height / img_size);
-        //     let selected_images = data
-        //         .filter((d, i) => selected[i])
-        //         .sort((a, b) => d3.ascending(a.x, b.x));
-        //     // selected_images = _.shuffle(selected_images);
-        //     selected_images = selected_images.slice(
-        //         0,
-        //         Math.min(n_rows * n_cols, selected_images.length),
-        //     );
-        //     let img_selection = g
-        //         .selectAll(".imggrid")
-        //         .data(selected_images)
-        //         .join("image")
-        //         .classed("imggrid", true)
-        //         .attr("width", img_size)
-        //         .attr("height", img_size)
-        //         .attr("x", (_, i) => pad + (i % n_cols) * img_size)
-        //         .attr(
-        //             "y",
-        //             (_, i) => Math.floor(i / n_cols) * img_size + sy.range()[1],
-        //         )
-        //         .attr("href", (d) => d.image_url);
-        //     img_selection.exit().remove();
-        // }
     };
 
     function draw_background_rect(
@@ -439,8 +402,11 @@ function predicate_contrastive(
         width = 100,
         height = 100,
         padding_top = 2,
+        padding_left = 10,
+        padding_right = 10,
+        padding_bottom = 10,
         font_size = 12,
-        subplot_height = 20,
+        subplot_height = 60,
     } = {},
 ) {
     g_container.selectAll("g.predicate-view").remove(); //clear itself, keep the fancy frame
@@ -453,7 +419,7 @@ function predicate_contrastive(
     g_container.draw = function (
         predicates,
         splom_attributes,
-        selected,
+        // selected,
         // should_draw_images,
     ) {
         let n_attributes = splom_attributes.length;
@@ -465,8 +431,8 @@ function predicate_contrastive(
             .scaleLinear()
             .domain([0, n_attributes])
             .range([
-                padding_top + 12,
-                padding_top + 12 + n_attributes * subplot_height * 1.8, //give more space compare to single predicate
+                padding_top,
+                padding_top + n_attributes * subplot_height, //give more space compare to single predicate
             ]);
 
         //background-rect
@@ -479,7 +445,7 @@ function predicate_contrastive(
                 g.call(draw_background_rect, {
                     top: sy(i) - 10,
                     left: 6,
-                    height: y_shift + 20,
+                    height: subplot_height - 10,
                     width: width - 6 * 2,
                 });
             });
@@ -490,7 +456,9 @@ function predicate_contrastive(
         );
         //origin at interval min
         // let interval_start_x = font_size * 10; //width/2.5;
-        let interval_start_x = font_size * (2 + attribute_text_max_length); //width/2.5;
+        let interval_start_x = padding_left + 10;
+        let interval_stop_x = width - interval_start_x;
+        // font_size * 0.5 * (2 + attribute_text_max_length); //width/2.5;
 
         //draw label
         let labels = g
@@ -498,17 +466,24 @@ function predicate_contrastive(
             .data(splom_attributes)
             .join("text")
             .attr("class", "label")
-            .attr("x", interval_start_x - 14)
-            .attr("y", (d, i) => sy(i) + font_size / 3)
-            .attr("text-anchor", "end")
-            // .attr("alignment-baseline", "central")
+            .attr("x", (interval_start_x + interval_stop_x) / 2)
+            .attr("y", (d, i) => sy(i) + font_size * 3)
             .style("font-size", `${font_size}px`)
+            .attr("text-anchor", "middle")
+            // .attr("alignment-baseline", "central")
+            .attr("fill", "#888")
+            .style("font-size", `${font_size}px`)
+            .style("text-transform", "uppercase")
+            .style("font-family", "sans-serif")
+            .style("font-weight", 600)
+            .style("font-style", "italic")
+            .style("opacity", 0.7)
             .text((d) => d);
 
-        g.selectAll("g.predicate-view-single")
+        g.selectAll("g.predicate-view-contrastive")
             .data([0, 1])
             .join("g")
-            .attr("class", "predicate-view-single")
+            .attr("class", "predicate-view-contrastive")
             ._groups[0].forEach((g, i) => {
                 g = d3.select(g);
                 g.call(draw_intervals, {
@@ -519,69 +494,10 @@ function predicate_contrastive(
                     i: i,
                     sy,
                     interval_start_x,
-                    subplot_height: subplot_height * 1.5,
+                    subplot_height: subplot_height,
                 });
             });
-        // if (should_draw_images) {
-        //     g.call(draw_images, {sy, width, height});
-        // }
     };
-
-    function draw_images(container, {width, height, sy} = {}) {
-        let first_brush_data = data.filter((d) => d.first_brush);
-        let second_brush_data = data.filter((d) => d.second_brush);
-        let selected_by_group = [first_brush_data, second_brush_data];
-
-        let remaining_height = height - sy.range()[1];
-        let remaining_height_per_group = remaining_height / 2;
-        let n_cols = 2;
-        let pad = 5;
-        let actual_width = width - 2 * pad;
-        let actual_height = remaining_height_per_group - pad;
-        let img_size = Math.min(actual_height, actual_width) / n_cols;
-        let n_rows = Math.floor(remaining_height_per_group / img_size);
-        let x_shift = width / 2 - (img_size * n_cols) / 2; //middle
-
-        let frame_stroke_width = 8;
-        g.selectAll(".imggrid").remove();
-        selected_by_group.forEach((selected, group_index) => {
-            // selected = _.shuffle(selected);
-            selected = selected.slice(0, n_rows * n_cols);
-            let g = container
-                .append("g")
-                .classed("imggrid", true)
-                .attr(
-                    "transform",
-                    `translate(${x_shift},${
-                        sy.range()[1] +
-                        group_index * img_size * n_rows +
-                        (group_index - 1) * Math.max(pad, frame_stroke_width)
-                    })`,
-                );
-
-            //draw image frame
-            g.selectAll("rect")
-                .data([0])
-                .join("rect")
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("width", img_size * n_cols)
-                .attr("height", img_size * n_rows)
-                .attr("fill", "none")
-                .attr("stroke-width", frame_stroke_width)
-                .attr("stroke", d3.schemeCategory10[group_index]);
-
-            g.selectAll("image")
-                .data(selected)
-                .join("image")
-                .attr("width", img_size)
-                .attr("height", img_size)
-                .attr("x", (_, i) => (i % n_cols) * img_size)
-                .attr("y", (_, i) => Math.floor(i / n_cols) * img_size)
-                .attr("href", (d) => d.image_url);
-            // img_selection.exit().remove();
-        });
-    }
 
     function draw_intervals(
         g,
@@ -670,6 +586,7 @@ function predicate_multiple(
         padding_top = 2,
         padding_bottom = 2,
         x_shift = 10,
+        font_size = 12,
     } = {},
 ) {
     // let height = attributes.length * 50;
@@ -684,23 +601,17 @@ function predicate_multiple(
         .attr("class", "predicate-view");
     g_container.node().value = {};
 
-    g_container.draw = function (predicates, attributes, n_boxes, selected) {
+    g_container.draw = function (predicates, attributes) {
         // predicates: array that contains objects of attr:interval pairs
         // attributes: union of attributes in a sequence of brushes
         let spacing = 32;
         let padding_left = 8;
         let padding_right = 8;
 
-        let subplot_height;
-        if (n_boxes == 2) {
-            //take up some space at leave room for images
-            subplot_height = 50;
-        } else {
-            //take up the full space
-            // subplot_height = (height - padding_top - padding_bottom + spacing) / attributes.length;
-            subplot_height = 100;
-            // (height - padding_top - padding_bottom + 10) / attributes.length;
-        }
+        let subplot_height = 100;
+        //take up the full space
+        // subplot_height = (height - padding_top - padding_bottom + spacing) / attributes.length;
+        // (height - padding_top - padding_bottom + 10) / attributes.length;
 
         let subplot_width = width - padding_left - padding_right;
         let subplots = [];
@@ -736,49 +647,13 @@ function predicate_multiple(
                             ? pt[attr_name]
                             : [undefined, undefined],
                     ),
-                    n_boxes: n_boxes,
+                    // n_boxes: n_boxes,
                 })
                 .call(draw_attribute_label);
 
             subplots.push(g);
-            // g.call(draw_time_cursor, {other_containers:subplots, vmax:predicates.length-1, x_shift});
         });
-
-        // if (n_boxes==2 && selected) {
-        //   g_container.call(draw_images, selected);
-        // }
     };
-
-    function draw_images(selected, sy) {
-        let n_cols = 2,
-            remaining_height = height - sy.range()[1],
-            pad = 5,
-            actual_width = width - 2 * pad,
-            img_size = actual_width / 2;
-        let n_rows = Math.floor(remaining_height / img_size);
-        let selected_images = data
-            .filter((d, i) => selected[i])
-            .sort((a, b) => d3.ascending(a.x, b.x));
-        // selected_images = _.shuffle(selected_images);
-        selected_images = selected_images.slice(
-            0,
-            Math.min(n_rows * n_cols, selected_images.length),
-        );
-        let img_selection = g
-            .selectAll(".imggrid")
-            .data(selected_images)
-            .join("image")
-            .classed("imggrid", true)
-            .attr("width", img_size)
-            .attr("height", img_size)
-            .attr("x", (_, i) => pad + (i % n_cols) * img_size)
-            .attr(
-                "y",
-                (_, i) => Math.floor(i / n_cols) * img_size + sy.range()[1],
-            )
-            .attr("href", (d) => d.image_url);
-        img_selection.exit().remove();
-    }
 
     function draw_time_cursor(
         container,
@@ -825,7 +700,6 @@ function predicate_multiple(
     function draw_attribute_label(container, {height, width} = {}) {
         height = height || container.height;
         width = width || container.width;
-        let font_size = 18;
         container
             .selectAll(".attr-label")
             .data([container.datum()])
@@ -841,20 +715,9 @@ function predicate_multiple(
             .style("text-transform", "uppercase")
             .style("font-family", "sans-serif")
             .style("font-weight", 600)
-            .style("font-size", font_size)
+            .style("font-size", `${font_size}px`)
             .style("font-style", "italic")
             .style("opacity", 0.7);
-        //middle
-        // .attr("x", 6)
-        // .attr("y", height / 2)
-        // .attr("fill", "#888")
-        // .attr("alignment-baseline", "central")
-        // .style("text-transform", "uppercase")
-        // .style("font-family", "sans-serif")
-        // .style("font-weight", 600)
-        // .style("font-size", 22)
-        // .style("font-style", "italic")
-        // .style("opacity", 0.7)
     }
 
     function draw_background_rect(container, {top = 0, height, width} = {}) {
@@ -884,25 +747,24 @@ function predicate_multiple(
             x_tick_labels = true,
             extent = [0, 1],
             intervals,
-            n_boxes,
         } = {},
     ) {
         height = height || container.height;
         width = width || container.width;
-        let margin_left = 0;
-        let margin_right = 2;
-        let margin_top = 2;
-        let margin_bottom = 2;
-        let interval_data = intervals;
         let interval_stroke_width = Math.max(
-            (width / intervals.length) * 0.7,
-            4,
+            (width / (intervals.length + 2)) * 0.7,
+            2,
         );
+        let margin_left = interval_stroke_width;
+        let margin_right = interval_stroke_width;
+        let margin_top = interval_stroke_width;
+        let margin_bottom = interval_stroke_width;
+        let interval_data = intervals;
 
         let sx = d3
             .scaleLinear()
-            .domain([-0.4, interval_data.length - 1 + 0.4])
-            .range([margin_left, width]);
+            .domain([0, interval_data.length - 1])
+            .range([margin_left, width - margin_right]);
         let sy = d3
             .scaleLinear()
             .domain(d3.extent(extent))
@@ -966,9 +828,7 @@ function predicate_multiple(
             .attr("y2", (d) => sy(d[1]))
             .attr("display", (d) => (d[0] === undefined ? "none" : ""))
             .attr("stroke-width", interval_stroke_width)
-            .attr("stroke", (d, i) =>
-                n_boxes == 2 ? d3.schemeCategory10[i] : "#1f78b4",
-            )
+            .attr("stroke", "#1f78b4")
             .attr("stroke-linecap", "round");
         // .attr("opacity", 0.7);
     }

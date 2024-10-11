@@ -42,11 +42,15 @@ class Dimbridge(anywidget.AnyWidget):
 
     # input attributes
     # .tag(sync=True) is required by AnyWidget to have them in sync with the JavaScript model
+    predicate_host = Unicode("http://localhost:9001").tag(sync=True)
+    dataset_name = Unicode("dummy_dataset_name").tag(sync=True)
+
     data = Instance(pd.DataFrame).tag(sync=True, to_json=pandas2json)
     x = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)
     y = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)
     c = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark color
-    s = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark size
+    # s = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark size
+    s = Float(4).tag(sync=True)
 
     # splom mark size
     splom_mark_size = Float(6.0).tag(sync=True)
