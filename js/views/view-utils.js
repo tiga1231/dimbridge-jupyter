@@ -250,7 +250,7 @@ export function depth_func(mode) {
             if (d.pred && d.selected) {
                 return 0.3;
             } else if (d.pred && !d.selected) {
-                return 0.1;
+                return 0.2;
             } else if (!d.pred && d.selected) {
                 return 0.1;
             } else if (!d.pred && !d.selected) {

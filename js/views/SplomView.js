@@ -47,6 +47,7 @@ export default class SplomView {
             margin_inner,
             splom_mark_size,
             splom_spacing,
+            splom_font_size,
         } = this.config;
 
         //gap between subplots in splot, measured in proportion (0 to 1) to the size of a subplot
@@ -119,7 +120,8 @@ export default class SplomView {
 
         if (n_boxes == 1) {
             if (this.predicate_mode === "data extent") {
-                color_mode = "selection";
+                // color_mode = "selection";
+                color_mode = "confusion";
             } else if (this.predicate_mode === "predicate regression") {
                 color_mode = "confusion";
             }
@@ -132,17 +134,6 @@ export default class SplomView {
         let style = get_point_style(color_mode);
         this.sc = (d, i) => style(d, i).fill;
 
-        //if (predicates !== undefined) {
-        //    //attach dummy ranges if certain clause doesn't exist for some brush t
-        //    for (let predicate_t of predicates) {
-        //        for (let attr of splom_attributes) {
-        //            if (!(attr in predicate_t)) {
-        //                predicate_t[attr] = extent[attr];
-        //            }
-        //        }
-        //    }
-        //}
-
         //draw SPLOM
         if (this.splom_obj === undefined) {
             console.log("SPLOM redrawing...");
@@ -151,7 +142,7 @@ export default class SplomView {
             this.splom_obj = splom_gl2(this.splom, this.data, {
                 s: (d) => this.config.splom_mark_size, //size of circle marks
                 stroke: "#eee",
-                stroke_width: 0.5,
+                stroke_width: 0.01,
                 depth: depth_func(color_mode),
                 padding_left: this.padding_left,
                 padding_right: this.padding_right,
@@ -163,11 +154,13 @@ export default class SplomView {
 
                 attrs: splom_attributes,
                 // x_tickvalues: linspace(0, 1, 4),
-                ticks: 3,
+                xticks: 3,
+                yticks: 3,
                 wspace: this.config.splom_spacing,
                 hspace: this.config.splom_spacing,
                 scales: {sc: this.sc},
-                label_fontsize: 12,
+                label_fontsize: 8,
+                dpi_scale: 1.0,
             });
         } else {
             this.recolor(color_mode);

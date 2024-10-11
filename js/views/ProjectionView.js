@@ -172,7 +172,7 @@ export default class ProjectionView {
             x: (d, i) => this.x[i],
             y: (d, i) => this.y[i],
             s: (d, i) => this.s,
-            stroke_width: 1.5,
+            stroke_width: 0.8,
             width: this.plot_width,
             height: this.plot_height,
             padding_left: this.padding_left,
@@ -181,6 +181,8 @@ export default class ProjectionView {
             padding_top: this.padding_top,
             scales: {sc},
             is_square_scale: true,
+
+            dpi_scale: 2.0,
 
             xticks: this.config.xticks,
             yticks: this.config.yticks,
@@ -332,7 +334,7 @@ export default class ProjectionView {
                 this.predicate_cf_dimensions,
             );
 
-            update_point_style_gl(this.sca, "selection");
+            update_point_style_gl(this.sca, "confusion");
             //update other views
             this.controller.on_projection_view_change(
                 predicates,
@@ -398,7 +400,8 @@ export default class ProjectionView {
 
             if (this.n_boxes == 1) {
                 if (this.predicate_mode === "data extent") {
-                    update_point_style_gl(this.sca, "selection");
+                    // update_point_style_gl(this.sca, "selection");
+                    update_point_style_gl(this.sca, "confusion");
                 } else {
                     //color points by false netagivity, false postivity, etc.
                     update_point_style_gl(this.sca, "confusion");

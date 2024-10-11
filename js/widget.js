@@ -46,19 +46,26 @@ let config = {
     predicate_view_fontsize: 12,
 
     splom_spacing: 4,
+    splom_font_size: 12,
 };
 
 // widget
 function initialize({model}) {
     console.log("DimBridge init");
     //set the dimbridge width to be Jupyter notebook cell width
-    let cell = d3.selectAll(".jp-OutputArea-output");
-    let cell_width = parseFloat(cell.style("width")) || 1000;
+    // let cell = d3.select(".jp-OutputArea-output");
+    // let cell = d3.selectAll(".jp-Cell-outputWrapper");
+    let cell = d3.select(".jp-WindowedPanel-viewport");
+    // console.log(cell.node().getBoundingClientRect());
+    // let cell_width = parseFloat(cell.style("width")) || 1000;
+    let cell_width = cell.node().getBoundingClientRect().width;
+    console.log("cell_width", cell_width);
+    // let cell_width = parseFloat(cell2.style("width")) || 1000;
 
     //other configs from python side
     config = {
         ...config,
-        width: cell_width - 18, //leave some space for shadow
+        width: cell_width - 118, //leave some space for shadow
         xticks: model.get("xticks"),
         yticks: model.get("yticks"),
         splom_mark_size: model.get("splom_mark_size"),

@@ -23,6 +23,7 @@ import os
 app = Flask(__name__, static_url_path="/static", static_folder="datasets")
 CORS(app)
 device = "cuda" if torch.cuda.is_available() else "cpu"
+print("device", device)
 
 
 def predict(x, a, mu):
@@ -57,7 +58,7 @@ def compute_predicate_sequence(
     x0,
     selected,
     attribute_names=[],
-    n_iter=20000,
+    n_iter=2000,
     device=device,
 ):
     """
@@ -78,7 +79,7 @@ def compute_predicate_sequence(
     label = torch.from_numpy(selected).float().to(device)
     # normalize
     mean = x.mean(0)
-    scale = x.std(0) + 0.1
+    scale = x.std(0) + 1e-2
     x = (x - mean) / scale
 
     # Trainable parameters
@@ -114,7 +115,7 @@ def compute_predicate_sequence(
         [
             {"params": mu, "weight_decay": 0},
             # smaller a encourages larger reach of the bounding box
-            {"params": a, "weight_decay": 0.01},
+            {"params": a, "weight_decay": 0.0},
         ],
         lr=1e-2,
         momentum=0.9,

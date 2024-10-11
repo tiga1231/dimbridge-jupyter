@@ -376,7 +376,7 @@ export function scatter_gl(
         label_fontsize = 12,
         stroke = "white",
         stroke_width = 1.0,
-        dpi_scale = 2.0,
+        dpi_scale = 1.0,
     } = {},
 ) {
     if (depth === undefined) {
@@ -536,8 +536,8 @@ export function splom_gl2(
         padding_right = 2,
         padding_bottom = 2,
         padding_top = 2,
-        wspace = 0.1, //The amount of width reserved for space between subplots. Similar to pyplot
-        hspace = 0.1,
+        // wspace = 1, //The amount of width reserved for space between subplots. Similar to pyplot
+        // hspace = 0.1,
 
         //x and y axes
         scales = {sc: undefined}, // todo: flexible for individual subplots
@@ -554,6 +554,7 @@ export function splom_gl2(
         //fill
         //cmap
         //c
+        dpi_scale = 1.0,
 
         //texts
         label_fontsize = 10,
@@ -591,7 +592,7 @@ export function splom_gl2(
         .style("position", "relative");
 
     //create a canvas, gl, with render functionality
-    let canvas = create_canvas(width, height);
+    let canvas = create_canvas(width, height, dpi_scale);
     let regl = regl2({canvas: canvas});
     d3.select(canvas).style("position", "absolute");
     container_div.node().appendChild(canvas);
@@ -642,8 +643,25 @@ export function splom_gl2(
                 d3.select(frame)
                     .attr("class", "frame")
                     .style("position", "absolute")
+                    .style("overflow", "visible")
                     .style("left", `${left}px`)
                     .style("top", `${top}px`);
+
+                d3.select(frame)
+                    .selectAll("text")
+                    .style("font-size", `${label_fontsize}px`);
+
+                if (i !== 0) {
+                    d3.select(frame)
+                        .selectAll(".x-axis .tick text")
+                        .style("display", "none");
+                }
+                if (j !== 0) {
+                    d3.select(frame)
+                        .selectAll(".y-axis .tick text")
+                        .style("display", "none");
+                }
+
                 frame_container.node().appendChild(frame);
 
                 //TODO histogram on the diagonal subplots
@@ -688,10 +706,12 @@ export function splom_gl2(
                         colors: data.map((d) => sc_gl(d)),
                         count: data.length,
                         size: data.map(
-                            (d, i) => s(d, i) * window.devicePixelRatio,
+                            (d, i) =>
+                                s(d, i) * window.devicePixelRatio * dpi_scale,
                         ),
                         stroke: color2gl(stroke),
-                        stroke_width: stroke_width * window.devicePixelRatio,
+                        stroke_width:
+                            stroke_width * window.devicePixelRatio * dpi_scale,
                         depth: data.map((d, i) => depth(d, i)),
                     });
 
@@ -731,7 +751,10 @@ export function splom_gl2(
                             colors: data.map((d) => sc_gl(d)),
                             count: data.length,
                             size: data.map(
-                                (d, i) => s(d, i) * window.devicePixelRatio,
+                                (d, i) =>
+                                    s(d, i) *
+                                    window.devicePixelRatio *
+                                    dpi_scale,
                             ),
                             stroke: color2gl(stroke),
                             stroke_width:
@@ -749,7 +772,10 @@ export function splom_gl2(
                             colors: colors,
                             count: data.length,
                             size: data.map(
-                                (d, i) => s(d, i) * window.devicePixelRatio,
+                                (d, i) =>
+                                    s(d, i) *
+                                    window.devicePixelRatio *
+                                    dpi_scale,
                             ),
                             stroke: color2gl(stroke),
                             stroke_width:
@@ -1170,6 +1196,7 @@ export function frame(
     }
     let gx = g_axes
         .append("g")
+        .attr("class", "x-axis")
         .attr("transform", `translate(0,${height - padding_bottom})`)
         .call(ax);
     let ay = d3
@@ -1181,6 +1208,7 @@ export function frame(
     }
     let gy = g_axes
         .append("g")
+        .attr("class", "y-axis")
         .attr("transform", `translate(${padding_left},0)`)
         .call(ay);
 

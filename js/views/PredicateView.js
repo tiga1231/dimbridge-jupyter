@@ -751,10 +751,7 @@ function predicate_multiple(
     ) {
         height = height || container.height;
         width = width || container.width;
-        let interval_stroke_width = Math.max(
-            (width / (intervals.length + 2)) * 0.7,
-            2,
-        );
+        let interval_stroke_width = clip(width / (intervals.length + 2), 2, 10);
         let margin_left = interval_stroke_width;
         let margin_right = interval_stroke_width;
         let margin_top = interval_stroke_width;
@@ -768,10 +765,7 @@ function predicate_multiple(
         let sy = d3
             .scaleLinear()
             .domain(d3.extent(extent))
-            .range([
-                height - margin_bottom,
-                margin_top + interval_stroke_width / 2,
-            ]);
+            .range([height - margin_bottom, margin_top]);
         container.scales = {sx, sy};
 
         // y axis
