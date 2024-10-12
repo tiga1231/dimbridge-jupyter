@@ -114,6 +114,212 @@ function reshape2d(arr, r, c) {
 
 // --------------- Vis Utils -----------------
 
+export function kde(
+    sel,
+    data,
+    {
+        x = (d) => d, //x value accessor,
+        normalize = false,
+        bandwidth = undefined,
+        evaluation_points = undefined,
+        width = 300,
+        height = 300,
+        padding_left = 0,
+        padding_right = 0,
+        padding_top = 0,
+        padding_bottom = 0,
+        stroke = "#1f77b4",
+        stroke_width = 2,
+        is_framed = true,
+        histtype = "bar", // 'bar' or 'step',
+        xticks = undefined,
+        yticks = undefined,
+        scales = {},
+        title = "",
+        frame_kwargs = "#eef",
+        label_fontsize = 12,
+    } = {},
+) {
+    let kde_values = data.map((seq) => seq.map((d) => x(d)));
+    if (evaluation_points === undefined) {
+        let extent = d3.extent(kde_values.flat());
+        // let r = extent[1] - extent[0];
+        let r = 0;
+        evaluation_points = linspace(
+            extent[0] - 0.1 * r,
+            extent[1] + 0.1 * r,
+            100,
+        );
+    }
+
+    let lines_data = [];
+    for (let values of kde_values) {
+        lines_data.push(
+            compute_kde(values, {evaluation_points, bandwidth, normalize}),
+        );
+    }
+
+    return lines(sel, lines_data, {
+        is_framed,
+        width,
+        height,
+        stroke,
+        stroke_width,
+        // data accessors:
+        x: (d) => d[0],
+        y: (d) => d[1],
+        xticks,
+        yticks,
+        title,
+        padding_left,
+        padding_bottom,
+        padding_right,
+        padding_top,
+        label_fontsize,
+        //scales
+        // scales: { sx, sy }
+    });
+
+    // sel.scales = { sx, sy };
+
+    return sel;
+}
+
+function compute_kde(
+    data,
+    {
+        evaluation_points = undefined,
+        bandwidth = undefined,
+        kernel = gaussian_kernel,
+        normalize = true,
+    } = {},
+) {
+    if (bandwidth === undefined) {
+        let extent = d3.extent(data);
+        let range = extent[1] - extent[0];
+        bandwidth = Math.pow(data.length, -0.2); // scotts rule, n**(-1./(d+4)),
+        bandwidth *= range / 5;
+        console.log("KDE using default bandwidth", bandwidth);
+    }
+
+    if (evaluation_points === undefined) {
+        evaluation_points = linspace(...d3.extent(data), 100);
+    }
+    if (normalize) {
+        return evaluation_points.map((x) => [
+            x,
+            d3.mean(data, (d) => kernel(d - x, bandwidth)),
+        ]);
+    } else {
+        return evaluation_points.map((x) => [
+            x,
+            d3.sum(data, (d) => kernel(d - x, bandwidth)),
+        ]);
+    }
+}
+
+function gaussian_kernel(x, bandwidth = 1) {
+    let h = bandwidth;
+    let z = h * Math.sqrt(2 * Math.PI); // normalizing factor
+    return (1 / z) * Math.exp((-x * x) / (2 * h * h));
+}
+
+// Draw multiple polylines
+function lines(
+    container = undefined,
+    data = [
+        // array of polylines, where each polyline containes array of nodes. e.g.,
+        d3.range(10).map((i) => ({x: i, y: Math.random() * 2 - 0.5})),
+        [
+            {x: 3, y: 0.5},
+            {x: 4, y: -0.5},
+            {x: 5, y: 0},
+            {x: 6, y: 0},
+        ],
+    ],
+
+    //kwargs
+    {
+        // plotting styles
+        is_framed = true,
+        width = 400,
+        height = 200,
+        stroke = (line_data, i) => C[i],
+        stroke_width = 4,
+        // data accessors:
+        x = (d) => d.x,
+        y = (d) => d.y,
+        //scales
+        scales = {sx: undefined, sy: undefined},
+        xticks,
+        yticks,
+
+        padding_left = 50,
+        padding_right = 0,
+        padding_top = 0,
+        padding_bottom = 12,
+        label_fontsize = 2,
+    } = {},
+) {
+    if (container === undefined) {
+        container = create_svg(width, height);
+    }
+    if (is_framed) {
+        let frame1 = container.call(frame, data.flat(), {
+            is_square_scale: false,
+            scales,
+            width,
+            height,
+            x,
+            y,
+            xticks,
+            yticks,
+            padding_left,
+            padding_right,
+            padding_top,
+            padding_bottom,
+            label_fontsize,
+        });
+        scales.sx = frame1.scales.sx;
+        scales.sy = frame1.scales.sy;
+    } else {
+        if (scales.sx === undefined) {
+            scales.sx = create_scale(data.flat(), {
+                value_accessor: (d) => x(d),
+                range: [0, width],
+            });
+        }
+        if (scales.sy === undefined) {
+            scales.sy = create_scale(data.flat(), {
+                value_accessor: (d) => y(d),
+                range: [height, 0],
+            });
+        }
+    }
+
+    container
+        .selectAll(".line")
+        .data(data)
+        .join("path")
+        .attr("class", "line")
+        .attr("fill", "none")
+        .attr("stroke", stroke)
+        .attr("stroke-width", stroke_width)
+        .attr(
+            "d",
+            d3
+                .line()
+                .x(function (d) {
+                    return scales.sx(x(d));
+                })
+                .y(function (d) {
+                    return scales.sy(y(d));
+                }),
+        );
+
+    return container;
+}
+
 export function create_scatter_gl_program(regl) {
     let vert = `
     precision mediump float;
@@ -423,6 +629,7 @@ export function scatter_gl(
     // Scales
     // From data to pixel coords on svg;
     let {sx, sy} = underlay.scales;
+
     //From pixels to GL's clip space
     let sx_svg2gl = d3.scaleLinear().domain([0, width]).range([-1, 1]);
     let sy_svg2gl = d3.scaleLinear().domain([0, height]).range([1, -1]);
@@ -532,10 +739,10 @@ export function splom_gl2(
         // histogram = false, //TODO
         layout = "upper", //'lower', 'upper' or 'both'
         // margin_left = 600,
-        padding_left = 2,
-        padding_right = 2,
-        padding_bottom = 2,
-        padding_top = 2,
+        padding_left = 16,
+        padding_right = 0,
+        padding_bottom = 20,
+        padding_top = 0,
         // wspace = 1, //The amount of width reserved for space between subplots. Similar to pyplot
         // hspace = 0.1,
 
@@ -556,6 +763,7 @@ export function splom_gl2(
         //c
         dpi_scale = 1.0,
 
+        kde_filters = [(d) => true],
         //texts
         label_fontsize = 10,
     } = {},
@@ -619,55 +827,88 @@ export function splom_gl2(
                     continue;
                 }
 
-                //subplot background frame
-                let frame = scatter_frame(undefined, data, {
-                    x: (d) => d[attrs[j]],
-                    y: (d) => d[attrs[i]],
-                    width: plot_width,
-                    height: plot_height,
-                    xlabel: attrs[j],
-                    ylabel: attrs[i],
-                    is_square_scale,
-                    xticks: xticks,
-                    yticks: yticks,
-                    padding_top,
-                    padding_bottom,
-                    padding_left,
-                    padding_right,
-                    title: "",
-                    label_fontsize,
-                });
-                //compute offset on the big gl canvas pixel coordinate
-                let left = padding_left + j * plot_width;
-                let top = padding_top + (n_attrs - 1 - i) * plot_height;
-                d3.select(frame)
-                    .attr("class", "frame")
-                    .style("position", "absolute")
-                    .style("overflow", "visible")
-                    .style("left", `${left}px`)
-                    .style("top", `${top}px`);
-
-                d3.select(frame)
-                    .selectAll("text")
-                    .style("font-size", `${label_fontsize}px`);
-
-                if (i !== 0) {
-                    d3.select(frame)
-                        .selectAll(".x-axis .tick text")
-                        .style("display", "none");
-                }
-                if (j !== 0) {
-                    d3.select(frame)
-                        .selectAll(".y-axis .tick text")
-                        .style("display", "none");
-                }
-
-                frame_container.node().appendChild(frame);
-
-                //TODO histogram on the diagonal subplots
                 if (i == j) {
-                    //histogram here
+                    //WIP histogram on the diagonal subplots
+                    let kde_plot = kde(
+                        undefined,
+                        kde_filters.map((f) => data.filter(f)),
+                        {
+                            x: (d) => d[attrs[i]],
+                            height: plot_height,
+                            width: plot_width,
+                            padding_top,
+                            padding_bottom,
+                            padding_left,
+                            padding_right,
+                            stroke: (seq, i) => C[i],
+                            stroke_width: 2,
+                            yticks: 2,
+                            xticks,
+                            label_fontsize,
+                        },
+                    );
+                    kde_plot.style("overflow", "visible");
+                    kde_plot.select(".y-axis").selectAll("text").remove();
+                    if (j !== 0) {
+                        kde_plot.select(".x-axis").selectAll("text").remove();
+                    }
+
+                    subplots[i][j] = kde_plot;
+
+                    let left = padding_left + j * plot_width;
+                    let top = padding_top + (n_attrs - 1 - i) * plot_height;
+                    kde_plot
+                        .attr("class", "kde")
+                        .style("position", "absolute")
+                        .style("overflow", "visible")
+                        .style("left", `${left}px`)
+                        .style("top", `${top}px`);
+                    frame_container.node().appendChild(kde_plot.node());
                 } else {
+                    //subplot background frame
+                    let frame = scatter_frame(undefined, data, {
+                        x: (d) => d[attrs[j]],
+                        y: (d) => d[attrs[i]],
+                        width: plot_width,
+                        height: plot_height,
+                        xlabel: attrs[j],
+                        ylabel: attrs[i],
+                        is_square_scale,
+                        xticks: xticks,
+                        yticks: yticks,
+                        padding_top,
+                        padding_bottom,
+                        padding_left,
+                        padding_right,
+                        title: "",
+                        label_fontsize,
+                    });
+                    frame_container.node().appendChild(frame);
+                    //compute offset on the big gl canvas pixel coordinate
+                    let left = padding_left + j * plot_width;
+                    let top = padding_top + (n_attrs - 1 - i) * plot_height;
+                    d3.select(frame)
+                        .attr("class", "frame")
+                        .style("position", "absolute")
+                        .style("overflow", "visible")
+                        .style("left", `${left}px`)
+                        .style("top", `${top}px`);
+
+                    d3.select(frame)
+                        .selectAll("text")
+                        .style("font-size", `${label_fontsize}px`);
+
+                    if (i !== 0) {
+                        d3.select(frame)
+                            .selectAll(".x-axis .tick text")
+                            .style("display", "none");
+                    }
+                    if (j !== 0) {
+                        d3.select(frame)
+                            .selectAll(".y-axis .tick text")
+                            .style("display", "none");
+                    }
+
                     // gl render here
                     let {sx, sy} = frame.scales; //updated sx, sy;
                     let pixel2clip_x = d3
@@ -807,10 +1048,12 @@ export function splom_gl2(
     // the entire splom recolor
     return_node.recolor = (colors, {depths} = {}) => {
         return_node.clear();
-        return_node.subplots.flat().forEach((subplot, i) => {
-            if (subplot !== undefined) {
-                subplot.recolor(colors, {depths: depths});
-            }
+        return_node.subplots.forEach((row, i) => {
+            row.forEach((subplot, j) => {
+                if (subplot !== undefined && i != j) {
+                    subplot.recolor(colors, {depths: depths});
+                }
+            });
         });
     };
 

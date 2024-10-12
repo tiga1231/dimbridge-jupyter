@@ -41,21 +41,24 @@ export class InteractionController {
 
         //update splom view
         if (data_size < 100000) {
-            let predicate_attributes = Object.keys(predicates[0]);
-            let subplot_limit = 7;
-            let splom_attributes = predicate_attributes;
-            splom_attributes = splom_attributes.slice(0, subplot_limit);
+            let splom_attributes;
+            if (this.predicate_mode === "predicate regression") {
+                // let subplot_limit = 6;
+                splom_attributes = Object.keys(predicates[0]); //.slice(0, subplot_limit);
+            } else if (this.predicate_mode === "data extent") {
+                splom_attributes = this.splom_view.splom_attributes;
+            }
 
-            //force redraw SPLOM if predicates are different
             if (
                 this.predicates_prev !== undefined &&
                 !same_key(this.predicates_prev[0], predicates[0])
             ) {
-                console.log("NOT SAME KEY!!!");
+                // force redraw SPLOM if predicates are different
+                // this will remove and redraw SPLOM
                 this.splom_view.splom_obj = undefined;
                 this.splom_view.draw(splom_attributes, predicates, "brush");
             } else {
-                // this will only recolor
+                // this will only recolor the current SPLOM
                 this.splom_view.draw(splom_attributes, predicates, "brush");
             }
         }

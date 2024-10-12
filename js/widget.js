@@ -92,6 +92,8 @@ function render({model, el}) {
     let c = numpy2array(model.get("c")); //mark color, array of 3-tuples [r,g,b], or array of numbers
     let s = model.get("s"); //mark size, array of numbers
 
+    let splom_attributes = model.get("splom_attributes");
+
     //augment data object
     data.forEach((d, i) => {
         d.x = x[i];
@@ -135,7 +137,13 @@ function render({model, el}) {
     );
     let predicate_view = new PredicateView(data, model, controller, config);
     // let splom_view = {node: create_svg().node(), draw: () => {}}; //dummy view
-    let splom_view = new SplomView(data, model, controller, config);
+    let splom_view = new SplomView(
+        data,
+        splom_attributes,
+        model,
+        controller,
+        config,
+    );
 
     // tell controller to manage between-view interactions
     controller.add_views(projection_view, predicate_view, splom_view);

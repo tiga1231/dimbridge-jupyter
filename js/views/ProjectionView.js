@@ -253,7 +253,7 @@ export default class ProjectionView {
             } else if (this.brush_mode == "contrastive") {
                 this.n_boxes = 2;
             } else if (this.brush_mode == "curve") {
-                this.n_boxes = 12;
+                this.n_boxes = 18;
             }
         }
         this.controller.on_projection_view_brush_start();
@@ -290,12 +290,12 @@ export default class ProjectionView {
         if (this.n_boxes == 2) {
             this.g_brush_path.call(draw_path, this.sample_brush_history, {
                 size: 0,
-                "stroke-width": 3,
+                "stroke-width": 4,
             });
         } else if (this.n_boxes > 2) {
             this.g_brush_path.call(draw_path, this.sample_brush_history, {
                 size: this.full_brush_history[0].brush_size,
-                "stroke-width": 3,
+                "stroke-width": 4,
             });
         }
 
@@ -349,6 +349,14 @@ export default class ProjectionView {
         if (event.selection === null) {
             // remove brush bounding boxes (bboxes) after brush cancelled
             this.sca.overlay.selectAll(".bbox").remove();
+
+            //when brush get cleared, clear data selection and crossfilter
+            // this.brush_cf_dimensions["x"].filterAll();
+            // this.brush_cf_dimensions["y"].filterAll();
+            // clear_selected(this.data);
+            //redraw
+            // let sc = (d) => d3.schemeCategory10[0];
+            // this.sca.recolor(sc, {depth: depth_func("selection")});
             return;
         }
 
@@ -359,7 +367,7 @@ export default class ProjectionView {
         }
 
         // optionally, remove brush bounding boxes (bboxes) after brush end (e.g, mouse release)
-        // this.sca.overlay.selectAll(".bbox").remove();
+        this.sca.overlay.selectAll(".bbox").remove();
 
         //dragging brushed region
         if (this.n_boxes > 1 && event.mode === "drag") {
@@ -405,21 +413,12 @@ export default class ProjectionView {
                 update_point_style_gl(this.sca, "contrastive");
             } else {
                 //highligh all selected points by brush curve
+                console.log("THERE", event);
                 update_point_style_gl(this.sca, "brush");
             }
 
             //inform other views
             this.controller.on_projection_view_change(predicates);
-        }
-
-        //when brush get cleared, clear data selection and crossfilter
-        if (event.selection === null) {
-            this.brush_cf_dimensions["x"].filterAll();
-            this.brush_cf_dimensions["y"].filterAll();
-            clear_selected(this.data);
-            //redraw
-            let sc = (d) => d3.schemeCategory10[0];
-            this.sca.recolor(sc, {depth: depth_func("selection")});
         }
     }
 

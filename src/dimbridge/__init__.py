@@ -87,8 +87,13 @@ class Dimbridge(anywidget.AnyWidget):
     height = Float(305).tag(sync=True)
     square_scale = Bool(True).tag(sync=True)
 
+    splom_attributes = List([]).tag(sync=True)
     # output attributes
     selected = List([]).tag(sync=True)
+
+    @default("splom_attributes")
+    def _default_splom_attributes(self):
+        return self.data.columns[:5].tolist()
 
     @default("s")
     def _default_s(self):

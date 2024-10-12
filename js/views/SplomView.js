@@ -22,7 +22,7 @@ import {
 import {draw_path, get_point_style, depth_func} from "./view-utils.js";
 
 export default class SplomView {
-    constructor(data, model, controller, config) {
+    constructor(data, splom_attributes, model, controller, config) {
         /*
     - Take data points and a list of attributes (e.g., predicates, or manual selection of attributes)
     - Renders data points in SPLOM
@@ -33,6 +33,7 @@ export default class SplomView {
         this.model = model;
         this.config = config;
         this.node = this.init_node();
+        this.splom_attributes = splom_attributes;
     }
 
     init_node() {
@@ -109,9 +110,10 @@ export default class SplomView {
         this.splom_obj.recolor(new_colors, {depths: new_depths});
     }
 
-    draw(splom_attributes, predicates = []) {
-        console.log("SPLOM view drawing...");
-
+    draw(splom_attributes = [], predicates = []) {
+        if (splom_attributes.length == 0) {
+            splom_attributes = this.splom_attributes;
+        }
         // let { n_boxes, predicates } = projection_view.value;
         let n_boxes = predicates.length;
 
@@ -152,6 +154,9 @@ export default class SplomView {
                 width: this.plot_width,
                 height: this.plot_width,
 
+                kde_strokes: [],
+                kde_filters: [d=>d.selected, d=>!d.selected],
+
                 attrs: splom_attributes,
                 // x_tickvalues: linspace(0, 1, 4),
                 xticks: 3,
@@ -184,6 +189,7 @@ export default class SplomView {
         for (let i = 0; i < subplots.length; i++) {
             for (let j = 0; j < subplots[0].length; j++) {
                 if (subplots[i][j] === undefined) continue;
+                if (i == j) continue;
                 subplots[i][j].overlay
                     .selectAll("g.brush-path")
                     .attr("display", "none");
@@ -205,6 +211,7 @@ export default class SplomView {
         for (let i = 0; i < subplots.length; i++) {
             for (let j = 0; j < subplots[0].length; j++) {
                 if (subplots[i][j] === undefined) continue;
+                if (i == j) continue;
 
                 let aj = splom_attributes[j];
                 let ai = splom_attributes[i];

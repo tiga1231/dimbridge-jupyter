@@ -59,25 +59,23 @@ export function set_selected_and_brushed(
         data.forEach((d, j) => {
             d.brushed[i] = cf.isElementFiltered(j);
         });
-
-        //last brush
-        if (i == sample_brush_history.length - 1) {
-            data.forEach((d, j) => {
-                d.selected = cf.isElementFiltered(j);
-                d.last_brush = d.brushed.findLastIndex((d) => d == true);
-                d.brush_depth = clip(1 - math.mean(d.brushed), 0.01, 0.99);
-                let brush_indices = d.brushed
-                    .map((b, i) => ({b, i}))
-                    .filter((b) => b.b)
-                    .map((b) => b.i);
-                if (brush_indices.length > 0) {
-                    d.average_brush = math.mean(brush_indices);
-                } else {
-                    d.average_brush = 0;
-                }
-            });
-        }
     }
+
+    //last brush
+    data.forEach((d, j) => {
+        d.selected = cf.isElementFiltered(j);
+        d.last_brush = d.brushed.findLastIndex((d) => d == true);
+        d.brush_depth = clip(1 - math.mean(d.brushed), 0.01, 0.99);
+        let brush_indices = d.brushed
+            .map((b, i) => ({b, i}))
+            .filter((b) => b.b)
+            .map((b) => b.i);
+        if (brush_indices.length > 0) {
+            d.median_brush = math.median(brush_indices);
+        } else {
+            d.median_brush = 0;
+        }
+    });
 }
 
 //export function set_selected(data, brush_data, cf, crossfilter_dimensions) {
@@ -138,6 +136,11 @@ export function draw_path(g, path_data, path_style) {
             "stroke-width": path_style.size,
             opacity: 0.3,
             "marker-end": "",
+        },
+        {
+            stroke: "#fff",
+            "stroke-width": path_style["stroke-width"] * 3,
+            opacity: 0.5,
         },
         {
             stroke: "#000",
@@ -345,8 +348,7 @@ export function get_point_style(mode = "confusion") {
             } else {
                 return {
                     fill: d3.interpolateViridis(
-                        // d.last_brush / d.brushed.length,
-                        d.average_brush / d.brushed.length,
+                        d.median_brush / (d.brushed.length - 1),
                     ),
                     stroke: "#eee",
                 };

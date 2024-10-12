@@ -107,8 +107,6 @@ export default class PredicateView {
         // when n_boxes=2, it displays a _pair_ of categorically colored range bars horizontally
         // when n_boxes>2, it displays a sequence of range bars _vertivally_ as a series of intervals
 
-        console.log("PredicateView drawing...", arguments);
-
         let n_boxes = predicates.length;
         let attributes = Object.keys(predicates[0]);
 
@@ -751,7 +749,7 @@ function predicate_multiple(
     ) {
         height = height || container.height;
         width = width || container.width;
-        let interval_stroke_width = clip(width / (intervals.length + 2), 2, 10);
+        let interval_stroke_width = clip(width / (intervals.length + 2), 2, 6);
         let margin_left = interval_stroke_width;
         let margin_right = interval_stroke_width;
         let margin_top = interval_stroke_width;
@@ -811,6 +809,8 @@ function predicate_multiple(
         // .attr("opacity", 0.7);
 
         let sc = d3.interpolateViridis;
+
+        let n_intervals = interval_data.length;
         let intervals_fg = container
             .selectAll("line.interval")
             .data(interval_data)
@@ -822,7 +822,7 @@ function predicate_multiple(
             .attr("y2", (d) => sy(d[1]))
             .attr("display", (d) => (d[0] === undefined ? "none" : ""))
             .attr("stroke-width", interval_stroke_width)
-            .attr("stroke", "#1f78b4")
+            .attr("stroke", (d, i) => sc(i / (n_intervals - 1)))
             .attr("stroke-linecap", "round");
         // .attr("opacity", 0.7);
     }

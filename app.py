@@ -58,7 +58,7 @@ def compute_predicate_sequence(
     x0,
     selected,
     attribute_names=[],
-    n_iter=2000,
+    n_iter=1000,
     device=device,
 ):
     """
@@ -114,8 +114,8 @@ def compute_predicate_sequence(
     optimizer = optim.SGD(
         [
             {"params": mu, "weight_decay": 0},
-            # smaller a encourages larger reach of the bounding box
-            {"params": a, "weight_decay": 0.0},
+            # smaller a encourages larger range of the bounding box
+            {"params": a, "weight_decay": 0.01},
         ],
         lr=1e-2,
         momentum=0.9,
