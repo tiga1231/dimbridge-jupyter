@@ -155,7 +155,7 @@ export default class SplomView {
                 height: this.plot_width,
 
                 kde_strokes: [],
-                kde_filters: [d=>d.selected, d=>!d.selected],
+                kde_filters: [(d) => d.selected, (d) => !d.selected],
 
                 attrs: splom_attributes,
                 // x_tickvalues: linspace(0, 1, 4),
