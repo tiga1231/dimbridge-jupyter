@@ -288,7 +288,7 @@ function predicate_single(
             );
             data.forEach((d, i) => {
                 d.selected = cf.isElementFiltered(i);
-                d.brushed = d.selected;
+                d.brushed = d.selected; //TODO later
             });
             controller.on_predicate_view_change(data);
         });
@@ -324,7 +324,7 @@ function predicate_single(
             );
             data.forEach((d, i) => {
                 d.selected = cf.isElementFiltered(i);
-                d.brushed = d.selected;
+                d.brushed = d.selected; //TODO FIXME
             });
             controller.on_predicate_view_change(data);
         });

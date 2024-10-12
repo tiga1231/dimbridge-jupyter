@@ -4,6 +4,7 @@
  * TODO move functions unique to some view to the corresponding view class files
  */
 
+import math from "../lib/math.js";
 import * as d3 from "d3";
 import {default as crossfilter} from "https://cdn.skypack.dev/crossfilter2@1.5.4?min";
 import {
@@ -20,6 +21,7 @@ import {
     zip,
     scatter,
     overflow_box,
+    clip,
 } from "../lib.js";
 
 export function set_pred(
@@ -42,18 +44,54 @@ export function set_pred(
     });
 }
 
-export function set_selected(data, brush_data, cf, crossfilter_dimensions) {
-    // update d.selected and d.brushed attributes for all points d in data
-    crossfilter_dimensions["x"].filter(brush_data.x_extent);
-    crossfilter_dimensions["y"].filter(brush_data.y_extent);
-    data.forEach((d, i) => {
-        let is_within_extent = cf.isElementFiltered(i);
-        // d.selected records current brush
-        d.selected = is_within_extent;
-        //d.brushed records current brush union with other brushes before next clearance
-        d.brushed = d.brushed || is_within_extent;
-    });
+export function set_selected_and_brushed(
+    data,
+    sample_brush_history,
+    cf,
+    crossfilter_dimensions,
+) {
+    for (let [i, brush_hist] of zip(
+        d3.range(sample_brush_history.length),
+        sample_brush_history,
+    )) {
+        crossfilter_dimensions["x"].filter(brush_hist.x_extent);
+        crossfilter_dimensions["y"].filter(brush_hist.y_extent);
+        data.forEach((d, j) => {
+            d.brushed[i] = cf.isElementFiltered(j);
+        });
+
+        //last brush
+        if (i == sample_brush_history.length - 1) {
+            data.forEach((d, j) => {
+                d.selected = cf.isElementFiltered(j);
+                d.last_brush = d.brushed.findLastIndex((d) => d == true);
+                d.brush_depth = clip(1 - math.mean(d.brushed), 0.01, 0.99);
+                let brush_indices = d.brushed
+                    .map((b, i) => ({b, i}))
+                    .filter((b) => b.b)
+                    .map((b) => b.i);
+                if (brush_indices.length > 0) {
+                    d.average_brush = math.mean(brush_indices);
+                } else {
+                    d.average_brush = 0;
+                }
+            });
+        }
+    }
 }
+
+//export function set_selected(data, brush_data, cf, crossfilter_dimensions) {
+//    // update d.selected and d.brushed attributes for all points d in data
+//    crossfilter_dimensions["x"].filter(brush_data.x_extent);
+//    crossfilter_dimensions["y"].filter(brush_data.y_extent);
+//    data.forEach((d, i) => {
+//        let is_within_extent = cf.isElementFiltered(i);
+//        // d.selected records current brush
+//        d.selected = is_within_extent;
+//        //d.brushed records current brush union with other brushes before next clearance
+//        // d.brushed = d.brushed || is_within_extent;
+//    });
+//}
 
 export function set_selected_2(
     data,
@@ -128,7 +166,7 @@ export function clear_selected(data) {
     //reset all brush-related attributes
     data.forEach((d) => {
         d.selected = false;
-        d.brushed = false;
+        d.brushed = [];
         d.first_brush = false;
         d.second_brush = false;
     });
@@ -242,7 +280,9 @@ export function depth_func(mode) {
     if (mode == "selection") {
         return (d, i) => (d.selected ? 0 : 0.9);
     } else if (mode == "brush") {
-        return (d, i) => (d.brushed ? 0 : 0.9);
+        return (d, i) => {
+            return d.brush_depth;
+        };
     } else if (mode == "contrastive") {
         return (d, i) => (d.first_brush ? 0.7 : d.second_brush ? 0 : 0.9);
     } else if (mode == "confusion") {
@@ -294,10 +334,28 @@ export function get_point_style(mode = "confusion") {
                   : {fill: "#aaa", stroke: "#eee"};
     } else if (mode === "brush") {
         //color by selected vs. unselected
-        style = (d, i) =>
-            d.brushed
-                ? {fill: d3.schemeCategory10[0], stroke: "#eee"}
-                : {fill: "#aaa", stroke: "#eee"};
+        // let latest_brush = new Array(data);
+        // style = (d, i) => ({fill: d3.schemeCategory10[0], stroke: "#eee"});
+        style = (d, i) => {
+            if (d.last_brush === -1) {
+                return {
+                    fill: "#aaa",
+                    stroke: "#eee",
+                };
+            } else {
+                return {
+                    fill: d3.interpolateViridis(
+                        // d.last_brush / d.brushed.length,
+                        d.average_brush / d.brushed.length,
+                    ),
+                    stroke: "#eee",
+                };
+            }
+        };
+        // style = (d, i) =>
+        // d.brushed
+        //     ? {fill: d3.schemeCategory10[1], stroke: "#eee"}
+        //     : {fill: "#aaa", stroke: "#eee"};
     }
     return style;
 }

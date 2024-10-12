@@ -2,11 +2,17 @@
 import * as d3 from "d3";
 import numeric from "https://cdn.skypack.dev/numeric@1.2.6?min";
 import math from "./lib/math.js";
+
+// custom
 import {DataExtentPredicate} from "./predicate_engine/DataExtentPredicate.js";
 import {PredicateRegression} from "./predicate_engine/PredicateRegression.js";
 
-// custom
-// import "./widget.css";
+import ProjectionView from "./views/ProjectionView.js";
+import PredicateView from "./views/PredicateView.js";
+import SplomView from "./views/SplomView.js";
+
+import {InteractionController} from "./controller.js";
+
 import * as lib from "./lib.js";
 import {
     C,
@@ -20,11 +26,7 @@ import {
     hex2rgb,
     normalize,
 } from "./lib.js";
-
-import ProjectionView from "./views/ProjectionView.js";
-import PredicateView from "./views/PredicateView.js";
-import SplomView from "./views/SplomView.js";
-import {InteractionController} from "./controller.js";
+// import "./widget.css";
 
 let cell_width;
 

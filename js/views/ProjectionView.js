@@ -25,7 +25,8 @@ import {
     draw_path,
     get_point_style,
     set_pred,
-    set_selected,
+    set_selected_and_brushed,
+    // set_selected,
     set_selected_2,
     update_brush_history,
     update_point_style_gl,
@@ -277,20 +278,13 @@ export default class ProjectionView {
             this.n_boxes,
         );
 
-        //update data - the d.selected attribute using brush selection
-        // if (this.brush_mode === "single" || event.mode === "handle") {
-        //     clear_selected(this.data);
-        // }
-        set_selected(
+        //update data - the d.selected and d.brushed attribute base on brush
+        set_selected_and_brushed(
             this.data,
-            this.sample_brush_history[this.sample_brush_history.length - 1],
+            this.sample_brush_history,
             this.brush_cf,
             this.brush_cf_dimensions,
         );
-
-        // if (this.n_boxes == 1 && this.predicate_mode === "data extent") {
-        // update_point_style_gl(this.sca, "confusion");
-        // }
 
         //draw fancy brush stroke (arrow, and shaded stroke)
         if (this.n_boxes == 2) {
