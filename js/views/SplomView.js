@@ -19,7 +19,12 @@ import {
     create_canvas,
 } from "../lib.js";
 
-import {draw_path, get_point_style, depth_func} from "./view-utils.js";
+import {
+    draw_path,
+    get_point_style,
+    depth_func,
+    subsample,
+} from "./view-utils.js";
 
 export default class SplomView {
     constructor(data, splom_attributes, model, controller, config) {
@@ -103,11 +108,56 @@ export default class SplomView {
             let c = sc(d, i);
             return [...color2gl(c), 1.0];
         };
-
         let depth = depth_func(mode);
         let new_colors = this.data.map((d, i) => sc_gl(d, i)); // array of RGBA tuples
         let new_depths = this.data.map((d, i) => depth(d, i));
         this.splom_obj.recolor(new_colors, {depths: new_depths});
+        // kde_filters: [(d) => true],
+        // kde_strokes: [C[0]], //stroke colors
+    }
+
+    redraw_kde(mode = "selection") {
+        let style = get_point_style(mode);
+        let sc = (d, i) => style(d, i).fill;
+        let n_brushes = this.data[0].brushed.length;
+        let kde_filters, kde_strokes;
+
+        if (mode === "selection") {
+            kde_filters = [(d) => d.selected, (d) => !d.selected];
+            kde_strokes = [sc({selected: true}), sc({selected: false})];
+        } else if (mode === "contrastive") {
+            kde_filters = [
+                (d) => !d.first_brush && !d.second_brush,
+                (d) => d.first_brush,
+                (d) => d.second_brush,
+            ];
+            kde_strokes = [
+                sc({first_brush: false, second_brush: false}),
+                sc({first_brush: true, second_brush: false}),
+                sc({first_brush: false, second_brush: true}),
+            ];
+        } else if (mode === "confusion") {
+            kde_filters = [
+                (d) => d.pred && d.selected, //true pos
+                (d) => !d.pred && !d.selected, // true neg
+                (d) => !d.pred && d.selected, // false neg
+                (d) => d.pred && !d.selected, // false posk
+            ];
+            kde_strokes = [
+                sc({pred: true, selected: true}),
+                sc({pred: false, selected: false}),
+                sc({pred: false, selected: true}),
+                sc({pred: true, selected: false}),
+            ];
+        } else if (mode === "brush") {
+            kde_filters = d3.range(n_brushes).map((i) => (d) => d.brushed[i]);
+            kde_strokes = d3.range(n_brushes).map((i) => {
+                return sc({median_brush: i, brushed: d3.range(n_brushes)});
+            });
+            kde_filters = subsample(kde_filters, 6);
+            kde_strokes = subsample(kde_strokes, 6);
+        }
+        this.splom_obj.redraw_kde(kde_filters, kde_strokes);
     }
 
     draw(splom_attributes = [], predicates = []) {
@@ -154,8 +204,9 @@ export default class SplomView {
                 width: this.plot_width,
                 height: this.plot_width,
 
-                kde_strokes: [],
-                kde_filters: [(d) => d.selected, (d) => !d.selected],
+                // kde_filters: [(d) => d.selected, (d) => !d.selected],
+                kde_filters: [(d) => true],
+                kde_strokes: [C[0]], //stroke colors
 
                 attrs: splom_attributes,
                 // x_tickvalues: linspace(0, 1, 4),
@@ -169,6 +220,7 @@ export default class SplomView {
             });
         } else {
             this.recolor(color_mode);
+            this.redraw_kde(color_mode);
         }
 
         //draw a predicate arrow path on each subplot of SPLOM

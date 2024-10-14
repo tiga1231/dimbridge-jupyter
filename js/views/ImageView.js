@@ -55,13 +55,21 @@ export default class ImageView {
         }
     }
 
+    clear() {
+        if (Array.isArray(this.fb)) {
+            for (let fb of this.fb) {
+                d3.select(fb).remove();
+            }
+        } else {
+            d3.select(this.fb).remove();
+        }
+    }
+
     draw_single(image_urls) {
         this.clear();
         let block_width = this.config.image_view_width - 1;
-
         this.image_size = block_width / this.config.n_cols;
         // this.config.n_cols;
-
         this.fb = flexbox([], this.config.image_view_width);
         d3.select(this.fb)
             // .style("margin-left", `${this.config.padding}px`)
@@ -69,7 +77,6 @@ export default class ImageView {
             .style("border", `solid 1px`)
             .style("filter", "drop-shadow(0 0 4px rgb(48,48,48)");
         this.node.appendChild(this.fb);
-
         image_urls = image_urls.slice(
             0,
             this.config.n_rows * this.config.n_cols,
@@ -84,16 +91,6 @@ export default class ImageView {
             .style("object-fit", "contain") //keep original aspect ratio
             .style("border", "solid white 0px")
             .attr("src", (d) => d);
-    }
-
-    clear() {
-        if (Array.isArray(this.fb)) {
-            for (let fb of this.fb) {
-                d3.select(fb).remove();
-            }
-        } else {
-            d3.select(this.fb).remove();
-        }
     }
 
     draw_multiple(image_urls) {

@@ -72,7 +72,10 @@ export class InteractionController {
 
             if (
                 this.predicates_prev !== undefined &&
-                !same_key(this.predicates_prev[0], predicates[0])
+                !same_set(
+                    new Set(this.predicates_prev),
+                    new Set(splom_attributes),
+                )
             ) {
                 // force redraw SPLOM if predicates are different
                 // this will remove and redraw SPLOM
@@ -82,8 +85,8 @@ export class InteractionController {
                 // this will only recolor the current SPLOM
                 this.splom_view.draw(splom_attributes, predicates, "brush");
             }
+            this.predicates_prev = splom_attributes;
         }
-        this.predicates_prev = predicates;
     }
 
     on_predicate_view_change(data) {

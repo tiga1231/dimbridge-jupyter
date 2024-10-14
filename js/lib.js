@@ -129,7 +129,7 @@ export function kde(
         padding_top = 0,
         padding_bottom = 0,
         stroke = "#1f77b4",
-        stroke_width = 2,
+        stroke_width = 1,
         is_framed = true,
         histtype = "bar", // 'bar' or 'step',
         xticks = undefined,
@@ -828,7 +828,6 @@ export function splom_gl2(
                 }
 
                 if (i == j) {
-                    //WIP histogram on the diagonal subplots
                     let kde_plot = kde(
                         undefined,
                         kde_filters.map((f) => data.filter(f)),
@@ -841,7 +840,7 @@ export function splom_gl2(
                             padding_left,
                             padding_right,
                             stroke: (seq, i) => C[i],
-                            stroke_width: 2,
+                            stroke_width: 1,
                             yticks: 2,
                             xticks,
                             label_fontsize,
@@ -852,7 +851,6 @@ export function splom_gl2(
                     if (j !== 0) {
                         kde_plot.select(".x-axis").selectAll("text").remove();
                     }
-
                     subplots[i][j] = kde_plot;
 
                     let left = padding_left + j * plot_width;
@@ -903,11 +901,11 @@ export function splom_gl2(
                             .selectAll(".x-axis .tick text")
                             .style("display", "none");
                     }
-                    if (j !== 0) {
-                        d3.select(frame)
-                            .selectAll(".y-axis .tick text")
-                            .style("display", "none");
-                    }
+                    // if (j !== 0) {
+                    d3.select(frame)
+                        .selectAll(".y-axis .tick text")
+                        .style("display", "none");
+                    // }
 
                     // gl render here
                     let {sx, sy} = frame.scales; //updated sx, sy;
@@ -1024,7 +1022,6 @@ export function splom_gl2(
                             depth: depths || data.map((d, i) => depth(d, i)),
                         });
                     };
-
                     subplots[i][j] = plot;
                 }
             }
@@ -1057,6 +1054,43 @@ export function splom_gl2(
         });
     };
 
+    return_node.redraw_kde = (kde_filters, kde_strokes) => {
+        frame_container.selectAll(".kde").remove();
+        for (let i = 0; i < n_attrs; i++) {
+            let j = i;
+            let kde_data = kde_filters.map((f) => data.filter(f));
+            let kde_plot = kde(undefined, kde_data, {
+                x: (d) => d[attrs[i]],
+                height: plot_height,
+                width: plot_width,
+                padding_top,
+                padding_bottom,
+                padding_left,
+                padding_right,
+                // stroke: (seq, i) => C[i], //TODO
+                stroke: (seq, i) => kde_strokes[i], //TODO
+                stroke_width: 1,
+                yticks: 2,
+                xticks,
+                label_fontsize,
+            });
+            kde_plot.style("overflow", "visible");
+            kde_plot.select(".y-axis").selectAll("text").remove();
+            if (j !== 0) {
+                kde_plot.select(".x-axis").selectAll("text").remove();
+            }
+            // subplots[i][j] = kde_plot;
+            let left = padding_left + j * plot_width;
+            let top = padding_top + (n_attrs - 1 - i) * plot_height;
+            kde_plot
+                .attr("class", "kde")
+                .style("position", "absolute")
+                .style("overflow", "visible")
+                .style("left", `${left}px`)
+                .style("top", `${top}px`);
+            frame_container.node().appendChild(kde_plot.node());
+        }
+    };
     return return_node;
 }
 
