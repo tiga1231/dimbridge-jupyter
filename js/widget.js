@@ -68,11 +68,11 @@ function initialize({model}) {
         splom_mark_size: model.get("splom_mark_size"),
 
         // image view
-        image_view_width: cell_width - 108,
+        image_view_width: cell_width - 118,
         n_cols: 12,
         n_rows: 6,
-        border_width: 0,
-        padding: 0,
+        border_width: 6,
+        padding: 5,
     };
     console.log("Widget Config:", config);
 }

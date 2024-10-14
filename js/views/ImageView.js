@@ -7,7 +7,7 @@ import {
 } from "../lib/fancy-frames.js";
 
 import {
-    // C,
+    C,
     // reshape,
     create_svg,
     // linspace,
@@ -38,11 +38,11 @@ export default class ImageView {
         padding = 10,
         image_view_width = 200,
     } = {}) {
-        this.image_size =
-            (image_view_width - 2 * padding - border_width * 2 - 10) / n_cols;
+        // this.image_size =
+        //     (image_view_width - 2 * padding - border_width * 2) / n_cols;
         // // let frame = make_frame(d3.select(fb));
-        this.ob = overflow_box([], this.image_size * 3);
-        d3.select(this.ob).style("overflow", "visible");
+        this.ob = overflow_box([], image_view_width * 0.5);
+        // d3.select(this.ob).style("overflow", "visible");
 
         return this.ob;
     }
@@ -57,18 +57,16 @@ export default class ImageView {
 
     draw_single(image_urls) {
         this.clear();
-        this.image_size =
-            (this.config.image_view_width -
-                2 * this.config.padding -
-                this.config.border_width * 2 -
-                10) /
-            this.config.n_cols;
+        let block_width = this.config.image_view_width - 1;
+
+        this.image_size = block_width / this.config.n_cols;
+        // this.config.n_cols;
 
         this.fb = flexbox([], this.config.image_view_width);
         d3.select(this.fb)
-            .style("margin-left", `${this.config.padding}px`)
-            .style("margin-right", `${this.config.padding}px`)
-            .style("border", `solid ${this.config.border_width}px`)
+            // .style("margin-left", `${this.config.padding}px`)
+            // .style("margin-right", `${this.config.padding}px`)
+            .style("border", `solid 1px`)
             .style("filter", "drop-shadow(0 0 4px rgb(48,48,48)");
         this.node.appendChild(this.fb);
 
@@ -99,22 +97,31 @@ export default class ImageView {
     }
 
     draw_multiple(image_urls) {
-        this.image_size =
-            (this.config.image_view_width -
-                2 * this.config.padding -
-                this.config.border_width * 2 -
-                10) /
-            this.config.n_cols;
+        let n_blocks = image_urls.length;
+        let block_width =
+            this.config.image_view_width / n_blocks -
+            2 * this.config.padding -
+            2 * this.config.border_width;
+        this.image_size = block_width / (this.config.n_cols / n_blocks);
 
         //array of array of images for each block.
         this.clear();
-        let n_blocks = image_urls.length;
-        this.fb = image_urls.map((images_per_brush) => {
-            let fb = flexbox([], this.config.image_view_width / n_blocks);
+        this.fb = image_urls.map((images_per_brush, i) => {
+            let fb = flexbox([], block_width);
+            let border_color;
+            if (n_blocks == 2) {
+                border_color = C[i];
+            } else {
+                border_color = d3.interpolateViridis(i / (n_blocks - 1));
+            }
             d3.select(fb)
                 .style("margin-left", `${this.config.padding}px`)
                 .style("margin-right", `${this.config.padding}px`)
-                .style("border", `solid ${this.config.border_width}px`)
+                .style("margin-bottom", `${this.config.padding}px`)
+                .style(
+                    "border",
+                    `solid ${border_color} ${this.config.border_width}px`,
+                )
                 .style("filter", "drop-shadow(0 0 4px rgb(48,48,48)");
             images_per_brush = images_per_brush.slice(
                 0,

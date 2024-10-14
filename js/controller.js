@@ -1,3 +1,6 @@
+import * as d3 from "d3";
+import {subsample} from "./views/view-utils.js";
+
 function same_key(a, b) {
     return same_set(new Set(Object.keys(a)), new Set(Object.keys(b)));
 }
@@ -46,9 +49,12 @@ export class InteractionController {
         if (this.image_view !== undefined) {
             // let brushed_data = this.projection_view.brush_cf.allFiltered();
             let images = [];
-            let skip = Math.max(1, Math.floor(this.data[0].brushed.length / 6));
-            for (let i = 0; i < this.data[0].brushed.length; i += skip) {
-                let brushed_data = this.data.filter((d) => d.brushed[i]);
+            let n_brushes = predicates.length;
+            let sample_brushes = subsample(d3.range(n_brushes), 6);
+            for (let brush_index of sample_brushes) {
+                let brushed_data = this.data.filter(
+                    (d) => d.brushed[brush_index],
+                );
                 images.push(brushed_data.map((d) => this.image_urls[d.index]));
             }
             this.image_view.draw(images);

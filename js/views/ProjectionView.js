@@ -253,7 +253,7 @@ export default class ProjectionView {
             } else if (this.brush_mode == "contrastive") {
                 this.n_boxes = 2;
             } else if (this.brush_mode == "curve") {
-                this.n_boxes = 18;
+                this.n_boxes = 12;
             }
         }
         this.controller.on_projection_view_brush_start();
