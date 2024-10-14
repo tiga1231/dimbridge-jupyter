@@ -13,24 +13,28 @@ export class InteractionController {
     splom_view;
     predicates_prev;
 
-    constructor() {
+    constructor(data, x, y, image_urls) {
+        this.data = data;
+        this.x = x;
+        this.y = y;
+        this.image_urls = image_urls;
         this.predicates_prev = undefined;
-
         return this;
     }
 
-    add_views(projection_view, predicate_view, splom_view) {
+    add_views(projection_view, predicate_view, splom_view, image_view) {
         this.projection_view = projection_view;
         this.predicate_view = predicate_view;
         this.splom_view = splom_view;
-    }
-
-    on_projection_view_brush_start() {
-        this.splom_view.hide_arrows();
+        this.image_view = image_view;
     }
 
     on_predicate_view_brushed(predicates, data_size = 1000) {
         let splom_attributes = Object.keys(predicates[0]);
+    }
+
+    on_projection_view_brush_start() {
+        this.splom_view.hide_arrows();
     }
 
     on_projection_view_change(predicates, data_size = 1000) {
@@ -38,6 +42,17 @@ export class InteractionController {
         //start predicate computation
         //update predicate view
         this.predicate_view.draw(predicates);
+
+        if (this.image_view !== undefined) {
+            // let brushed_data = this.projection_view.brush_cf.allFiltered();
+            let images = [];
+            let skip = Math.max(1, Math.floor(this.data[0].brushed.length / 6));
+            for (let i = 0; i < this.data[0].brushed.length; i += skip) {
+                let brushed_data = this.data.filter((d) => d.brushed[i]);
+                images.push(brushed_data.map((d) => this.image_urls[d.index]));
+            }
+            this.image_view.draw(images);
+        }
 
         //update splom view
         if (data_size < 100000) {

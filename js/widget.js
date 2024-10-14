@@ -10,6 +10,7 @@ import {PredicateRegression} from "./predicate_engine/PredicateRegression.js";
 import ProjectionView from "./views/ProjectionView.js";
 import PredicateView from "./views/PredicateView.js";
 import SplomView from "./views/SplomView.js";
+import ImageView from "./views/ImageView.js";
 
 import {InteractionController} from "./controller.js";
 
@@ -29,27 +30,7 @@ import {
 // import "./widget.css";
 
 let cell_width;
-
-// layout config
-let config = {
-    //between-view configs
-    margin_outer: 10,
-    margin_inner: 4,
-    font_size: 16,
-    gap: 10,
-
-    //projection view
-    scatter_padding: 14,
-    scatter_width: 0.4,
-    scatter_height: 0.4,
-
-    //predicate view
-    predicate_view_subplot_height: 50,
-    predicate_view_fontsize: 12,
-
-    splom_spacing: 4,
-    splom_font_size: 12,
-};
+let config;
 
 // widget
 function initialize({model}) {
@@ -57,20 +38,41 @@ function initialize({model}) {
     //set the dimbridge width to be Jupyter notebook cell width
     // let cell = d3.select(".jp-OutputArea-output");
     // let cell = d3.selectAll(".jp-Cell-outputWrapper");
-    let cell = d3.select(".jp-WindowedPanel-viewport");
-    // console.log(cell.node().getBoundingClientRect());
     // let cell_width = parseFloat(cell.style("width")) || 1000;
+    let cell = d3.select(".jp-WindowedPanel-viewport");
     let cell_width = cell.node().getBoundingClientRect().width;
     console.log("cell_width", cell_width);
-    // let cell_width = parseFloat(cell2.style("width")) || 1000;
 
-    //other configs from python side
+    // layout config
     config = {
-        ...config,
+        //between-view configs
+        margin_outer: 10,
+        margin_inner: 4,
+        font_size: 16,
+        gap: 10,
+
+        //projection view
+        scatter_padding: 14,
+        scatter_width: 0.4,
+        scatter_height: 0.4,
+
+        //predicate view
+        predicate_view_subplot_height: 50,
+        predicate_view_fontsize: 12,
+
+        splom_spacing: 4,
+        splom_font_size: 12,
         width: cell_width - 118, //leave some space for shadow
         xticks: model.get("xticks"),
         yticks: model.get("yticks"),
         splom_mark_size: model.get("splom_mark_size"),
+
+        // image view
+        image_view_width: cell_width - 108,
+        n_cols: 12,
+        n_rows: 6,
+        border_width: 0,
+        padding: 0,
     };
     console.log("Widget Config:", config);
 }
@@ -91,6 +93,7 @@ function render({model, el}) {
     let y = numpy2array(model.get("y"));
     let c = numpy2array(model.get("c")); //mark color, array of 3-tuples [r,g,b], or array of numbers
     let s = model.get("s"); //mark size, array of numbers
+    let image_urls = model.get("image_urls");
 
     let splom_attributes = model.get("splom_attributes");
 
@@ -125,7 +128,7 @@ function render({model, el}) {
             : new PredicateRegression(data, attributes, model);
 
     //init controller
-    let controller = new InteractionController();
+    let controller = new InteractionController(data, x, y, image_urls);
 
     //init views
     let projection_view = new ProjectionView(
@@ -145,24 +148,45 @@ function render({model, el}) {
         config,
     );
 
+    let image_view = image_urls.length > 0 ? new ImageView(config) : undefined;
+
     // tell controller to manage between-view interactions
-    controller.add_views(projection_view, predicate_view, splom_view);
+    controller.add_views(
+        projection_view,
+        predicate_view,
+        splom_view,
+        image_view,
+    );
 
     // add margins between view components
     d3.select(projection_view.node).style("margin-right", `${config.gap}px`);
     d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
+    d3.select(image_view.node).style("margin-top", `${config.gap}px`);
 
     // return main view
-    let return_node = flexbox(
-        [
-            projection_view.node,
-            predicate_view.node,
-            splom_view.node, //
-        ],
-        width,
-    );
-    d3.select(return_node).style("padding", "8px"); // give some space for shadow effects
+    let return_node;
+    if (image_view !== undefined) {
+        return_node = flexbox(
+            [
+                projection_view.node,
+                predicate_view.node,
+                splom_view.node,
+                image_view.node,
+            ],
+            width,
+        );
+    } else {
+        return_node = flexbox(
+            [
+                projection_view.node,
+                predicate_view.node,
+                splom_view.node, //
+            ],
+            width,
+        );
+    }
 
+    d3.select(return_node).style("padding", "8px"); // give some space for shadow effects
     el.appendChild(return_node);
     return cleanup;
 

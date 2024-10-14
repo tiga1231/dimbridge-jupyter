@@ -89,7 +89,7 @@ export default class PredicateView {
         this.svg = create_svg(this.plot_width, this.plot_height);
         //predicate view
         this.view_g = this.svg.append("g");
-        let ob = overflow_box(this.svg.node(), width * scatter_height);
+        let ob = overflow_box([this.svg.node()], width * scatter_height);
         d3.select(ob)
             .style("position", "absolute")
             .style("top", `${this.padding_top}px`)

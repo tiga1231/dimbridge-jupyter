@@ -88,6 +88,7 @@ class Dimbridge(anywidget.AnyWidget):
     square_scale = Bool(True).tag(sync=True)
 
     splom_attributes = List([]).tag(sync=True)
+    image_urls = List([]).tag(sync=True)
     # output attributes
     selected = List([]).tag(sync=True)
 

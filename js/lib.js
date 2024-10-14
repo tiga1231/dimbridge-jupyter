@@ -1060,7 +1060,7 @@ export function splom_gl2(
     return return_node;
 }
 
-export function overflow_box(node, height, width = undefined) {
+export function overflow_box(nodes, height, width = undefined) {
     let wrapping_div = d3
         .create("div")
         .classed("overflow", true)
@@ -1071,7 +1071,10 @@ export function overflow_box(node, height, width = undefined) {
     if (width !== undefined) {
         wrapping_div.style("width", `${width}px`);
     }
-    wrapping_div.node().appendChild(node);
+
+    for (let node of nodes) {
+        wrapping_div.node().appendChild(node);
+    }
     return wrapping_div.node();
 }
 
