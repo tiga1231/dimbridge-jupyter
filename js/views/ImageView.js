@@ -99,7 +99,7 @@ export default class ImageView {
             this.config.image_view_width / n_blocks -
             2 * this.config.padding -
             2 * this.config.border_width;
-        this.image_size = block_width / (this.config.n_cols / n_blocks);
+        this.image_size = (block_width - 1) / (this.config.n_cols / n_blocks);
 
         //array of array of images for each block.
         this.clear();

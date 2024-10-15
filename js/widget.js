@@ -41,8 +41,9 @@ function initialize({model}) {
     // let cell_width = parseFloat(cell.style("width")) || 1000;
     let cell = d3.select(".jp-WindowedPanel-viewport");
     let cell_width = cell.node().getBoundingClientRect().width;
-    console.log("cell_width", cell_width);
 
+    let ui_width = (cell_width - 118) * 0.8;
+    console.log("cell_width", cell_width);
     // layout config
     config = {
         //between-view configs
@@ -62,13 +63,13 @@ function initialize({model}) {
 
         splom_spacing: 4,
         splom_font_size: 12,
-        width: cell_width - 118, //leave some space for shadow
+        width: ui_width, //leave some space for shadow
         xticks: model.get("xticks"),
         yticks: model.get("yticks"),
         splom_mark_size: model.get("splom_mark_size"),
 
         // image view
-        image_view_width: cell_width - 118,
+        image_view_width: ui_width,
         n_cols: 12,
         n_rows: 6,
         border_width: 6,
@@ -128,7 +129,11 @@ function render({model, el}) {
             : new PredicateRegression(data, attributes, model);
 
     //init controller
-    let controller = new InteractionController(data, x, y, image_urls);
+    let controller = new InteractionController(
+        data,
+        image_urls,
+        predicate_mode,
+    );
 
     //init views
     let projection_view = new ProjectionView(

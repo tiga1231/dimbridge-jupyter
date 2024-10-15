@@ -65,8 +65,6 @@ def compute_predicate_sequence(
     x0 - numpy array, shape=[n_points, n_feature]. Data points
     selected - boolean array. shape=[brush_index, n_points] of selection
     """
-    mu_init = None
-    a_init = 0.4
 
     n_points, n_features = x0.shape
     n_brushes = selected.shape[0]
@@ -87,13 +85,15 @@ def compute_predicate_sequence(
     # mu can initialized around mean_pos examples
     # a can initialized around a constant across all axes
     selection_centroids = torch.stack([x[sel_t].mean(0) for sel_t in selected], 0)
+    selection_std = torch.stack([x[sel_t].std(0) for sel_t in selected], 0)
+    print(selection_std)
 
     # initialize the bounding box center (mu) at the data centroid, +-0.1 at random
-    if mu_init is None:
-        mu_init = selection_centroids
+    mu_init = selection_centroids
+    a_init = 1 / selection_std
     # a = (a_init + 0.1 * (2 * torch.rand(n_brushes, n_features) - 1)).to(device)
     # mu = mu_init + 0.1 * (2 * torch.rand(n_brushes, x.shape[1], device=device) - 1)
-    a = torch.zeros(n_brushes, n_features, device=device).fill_(a_init)
+    a = a_init.to(device)
     mu = mu_init.to(device)
     a.requires_grad_(True)
     mu.requires_grad_(True)
@@ -115,10 +115,10 @@ def compute_predicate_sequence(
         [
             {"params": mu, "weight_decay": 0},
             # smaller a encourages larger range of the bounding box
-            {"params": a, "weight_decay": 0.01},
+            {"params": a, "weight_decay": 0.25},
         ],
         lr=1e-2,
-        momentum=0.9,
+        momentum=0.4,
         nesterov=True,
     )
 
@@ -133,16 +133,19 @@ def compute_predicate_sequence(
             loss = bce(pred, label[t])
             # loss += (mu[t] - selection_centroids[t]).pow(2).mean() * 20
             loss_per_brush.append(loss)
-
             smoothness_loss = 0
-            if len(selected) > 1:
-                smoothness_loss += 50 * (a[1:] - a[:-1]).pow(2).mean()
+            if len(selected) == 2:
+                smoothness_loss += 5 * (a[1:] - a[:-1]).pow(2).mean()
                 smoothness_loss += 1 * (mu[1:] - mu[:-1]).pow(2).mean()
+            elif len(selected) > 2:
+                smoothness_loss += 500 * (a[1:] - a[:-1]).pow(2).mean()
+                smoothness_loss += 10 * (mu[1:] - mu[:-1]).pow(2).mean()
+
         # print('bce', loss_per_brush)
         # print('smoothness', smoothness_loss.item())
-        sparsity_loss = 0
+        # sparsity_loss = 0
         # sparsity_loss = a.abs().mean() * 100
-        total_loss = sum(loss_per_brush) + smoothness_loss + sparsity_loss
+        total_loss = sum(loss_per_brush) + smoothness_loss  # + sparsity_loss
         optimizer.zero_grad()
         total_loss.backward()
         optimizer.step()

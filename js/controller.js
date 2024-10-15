@@ -16,12 +16,11 @@ export class InteractionController {
     splom_view;
     predicates_prev;
 
-    constructor(data, x, y, image_urls) {
+    constructor(data, image_urls, predicate_mode) {
         this.data = data;
-        this.x = x;
-        this.y = y;
         this.image_urls = image_urls;
         this.predicates_prev = undefined;
+        this.predicate_mode = predicate_mode;
         return this;
     }
 
@@ -80,10 +79,10 @@ export class InteractionController {
                 // force redraw SPLOM if predicates are different
                 // this will remove and redraw SPLOM
                 this.splom_view.splom_obj = undefined;
-                this.splom_view.draw(splom_attributes, predicates, "brush");
+                this.splom_view.draw(splom_attributes, predicates);
             } else {
                 // this will only recolor the current SPLOM
-                this.splom_view.draw(splom_attributes, predicates, "brush");
+                this.splom_view.draw(splom_attributes, predicates);
             }
             this.predicates_prev = splom_attributes;
         }

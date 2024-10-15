@@ -269,7 +269,7 @@ function predicate_single(
             .attr("stroke-width", 10);
 
         //WIP draw the interval controls
-        let control_circle_radii = 5;
+        let control_circle_radii = 0; //TODO
 
         let drag_min = d3.drag().on("drag", function (event, d) {
             let new_interval_min = sx.domain([d.vmin, d.vmax]).invert(event.x);

@@ -218,9 +218,18 @@ export default class SplomView {
                 label_fontsize: 8,
                 dpi_scale: 1.0,
             });
+            if (color_mode === "confusion") {
+                this.redraw_kde("selection");
+            } else {
+                this.redraw_kde(color_mode);
+            }
         } else {
             this.recolor(color_mode);
-            this.redraw_kde(color_mode);
+            if (color_mode === "confusion") {
+                this.redraw_kde("selection");
+            } else {
+                this.redraw_kde(color_mode);
+            }
         }
 
         //draw a predicate arrow path on each subplot of SPLOM
