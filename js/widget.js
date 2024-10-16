@@ -42,7 +42,7 @@ function initialize({model}) {
     let cell = d3.select(".jp-WindowedPanel-viewport");
     let cell_width = cell.node().getBoundingClientRect().width;
 
-    let ui_width = (cell_width - 118) * 0.8;
+    let ui_width = cell_width - 118;
     console.log("cell_width", cell_width);
     // layout config
     config = {
@@ -166,7 +166,9 @@ function render({model, el}) {
     // add margins between view components
     d3.select(projection_view.node).style("margin-right", `${config.gap}px`);
     d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
-    d3.select(image_view.node).style("margin-top", `${config.gap}px`);
+    if (image_view !== undefined) {
+        d3.select(image_view.node).style("margin-top", `${config.gap}px`);
+    }
 
     // return main view
     let return_node;
