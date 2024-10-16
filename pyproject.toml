@@ -43,4 +43,4 @@ push            = false
 
 [tool.bumpver.file_patterns]
 "pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
-"src/dimbridge/__init__.py" = ['__version__ = "0.1.0"']
+"src/dimbridge/__init__.py" = ['__version__ = "{version}"']
