@@ -30,7 +30,7 @@ from .datautils import numpy2json, pandas2json
 try:
     __version__ = importlib.metadata.version("dimbridge")
 except importlib.metadata.PackageNotFoundError:
-    __version__ = "0.1.0"
+    
 
 
 class Dimbridge(anywidget.AnyWidget):
