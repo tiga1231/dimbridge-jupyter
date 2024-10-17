@@ -50,10 +50,10 @@ class Dimbridge(anywidget.AnyWidget):
     y = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)
     c = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark color
     # s = Instance(np.ndarray).tag(sync=True, to_json=numpy2json)  # mark size
-    s = Float(4).tag(sync=True)
+    s = Float(default_value=4).tag(sync=True)
 
     # splom mark size
-    splom_mark_size = Float(6.0).tag(sync=True)
+    splom_s = Float(6.0).tag(sync=True)
 
     # color map
     cmap = Enum(["viridis", "set10"], default_value="viridis").tag(sync=True)
@@ -94,11 +94,11 @@ class Dimbridge(anywidget.AnyWidget):
 
     @default("splom_attributes")
     def _default_splom_attributes(self):
-        return self.data.columns[:5].tolist()
+        return self.data.columns[:6].tolist()
 
-    @default("s")
-    def _default_s(self):
-        return np.zeros_like(self.x) + 6
+    # @default("s")
+    # def _default_s(self):
+    #     return 6
 
     @default("c")
     def _default_c(self):

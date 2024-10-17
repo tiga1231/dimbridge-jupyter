@@ -199,7 +199,6 @@ function compute_kde(
         let range = extent[1] - extent[0];
         bandwidth = Math.pow(data.length, -0.2); // scotts rule, n**(-1./(d+4)),
         bandwidth *= range / 5;
-        console.log("KDE using default bandwidth", bandwidth);
     }
 
     if (evaluation_points === undefined) {
@@ -346,25 +345,22 @@ export function create_scatter_gl_program(regl) {
 
     void main() {
       float eps = 0.01;
-  
       //round marks
       vec2 pointCoord = (gl_PointCoord.xy-0.5)*2.0;
       float dist = length(pointCoord); // distance to point center, normalized to [0,1]
-      if (dist>1.0) discard;
+      if (dist>1.0)
+        discard;
       gl_FragColor = v_color;
-      // if (v_size > 6.0){ //border color if marker size > 2.0
-      float stroke = u_stroke_width / v_size; //normalized stroke width
-      float mix_factor = smoothstep(1.0-stroke-eps, 1.0-stroke+eps, dist);
-      gl_FragColor = mix(
-          v_color, 
-          vec4(u_stroke, 1.0), 
-          mix_factor
-      );
+      gl_FragColor.a = 1.0;
+      if(u_stroke_width > 0.01){
+        float stroke = u_stroke_width / v_size; //normalized stroke width
+        float mix_factor = smoothstep(1.0-stroke-eps, 1.0-stroke+eps, dist);
+        gl_FragColor = mix( v_color, vec4(u_stroke, 1.0), mix_factor);
+        float alpha = 1.0 - smoothstep(1.0-stroke+stroke*0.8, 1.0, dist);
+        gl_FragColor.a = alpha;
+      }
       // debug depth:
       // gl_FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
-      float alpha = 1.0 - smoothstep(1.0-stroke+stroke*0.8, 1.0, dist);
-      gl_FragColor.a = alpha;
-      //}
     }`;
 
     let render_func = regl({
@@ -704,7 +700,7 @@ export function scatter_gl(
         // update color scale
         sc = new_sc;
         sc_gl = (d, i) => {
-            let c = sc(d, i);
+            let c = new_sc(d, i);
             return [...color2gl(c), 1.0];
         };
         // re-render
@@ -1002,8 +998,8 @@ export function splom_gl2(
                         });
                     };
 
-                    plot.recolor = (colors, {depths} = {}) => {
-                        _render({
+                    plot.recolor_data = (colors, {depths}) => {
+                        let recolor_data = {
                             positions: data.map((d) => [
                                 sx_gl(d[attrs[j]]),
                                 sy_gl(d[attrs[i]]),
@@ -1020,7 +1016,11 @@ export function splom_gl2(
                             stroke_width:
                                 stroke_width * window.devicePixelRatio,
                             depth: depths || data.map((d, i) => depth(d, i)),
-                        });
+                        };
+                        return recolor_data;
+                    };
+                    plot.recolor = (colors, {depths} = {}) => {
+                        _render(plot.recolor_data(colors, {depths}));
                     };
                     subplots[i][j] = plot;
                 }
@@ -1045,13 +1045,40 @@ export function splom_gl2(
     // the entire splom recolor
     return_node.recolor = (colors, {depths} = {}) => {
         return_node.clear();
+        // return_node.subplots.forEach((row, i) => {
+        //     row.forEach((subplot, j) => {
+        //         if (subplot !== undefined && i != j) {
+        //             subplot.recolor(colors, {depths: depths});
+        //         }
+        //     });
+        // });
+        let combined_data = {
+            positions: [],
+            colors: [],
+            count: 0,
+            size: [],
+            depth: [],
+            stroke_width: undefined,
+            stroke: undefined,
+        };
         return_node.subplots.forEach((row, i) => {
             row.forEach((subplot, j) => {
                 if (subplot !== undefined && i != j) {
-                    subplot.recolor(colors, {depths: depths});
+                    let d = subplot.recolor_data(colors, {depths});
+                    console.log("d", d);
+                    for (let attr of ["positions", "colors", "depth", "size"]) {
+                        combined_data[attr] = combined_data[attr].concat(
+                            d[attr],
+                        );
+                    }
+                    combined_data.count += d.count;
+                    combined_data.stroke = d.stroke;
+                    combined_data.stroke_width = d.stroke_width;
                 }
             });
         });
+        console.log("combined_data", combined_data);
+        _render(combined_data);
     };
 
     return_node.redraw_kde = (kde_filters, kde_strokes) => {

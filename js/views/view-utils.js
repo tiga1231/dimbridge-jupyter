@@ -44,12 +44,32 @@ export function set_pred(
     });
 }
 
-export function set_selected_and_brushed(
+export function set_selected(
     data,
     sample_brush_history,
     cf,
     crossfilter_dimensions,
 ) {
+    let last_brush = sample_brush_history[sample_brush_history.length - 1];
+    crossfilter_dimensions["x"].filter(last_brush.x_extent);
+    crossfilter_dimensions["y"].filter(last_brush.y_extent);
+    data.forEach((d, j) => {
+        d.selected = cf.isElementFiltered(j);
+    });
+    console.log("set_selected");
+}
+
+export function set_brushed(
+    data,
+    sample_brush_history,
+    cf,
+    crossfilter_dimensions,
+) {
+    data.forEach((d, j) => {
+        d.last_brush = -1;
+        d.brush_indices = [];
+    });
+
     for (let [i, brush_hist] of zip(
         d3.range(sample_brush_history.length),
         sample_brush_history,
@@ -57,25 +77,26 @@ export function set_selected_and_brushed(
         crossfilter_dimensions["x"].filter(brush_hist.x_extent);
         crossfilter_dimensions["y"].filter(brush_hist.y_extent);
         data.forEach((d, j) => {
-            d.brushed[i] = cf.isElementFiltered(j);
+            let brushed = cf.isElementFiltered(j);
+            d.brushed[i] = brushed;
+            if (brushed) {
+                d.brush_indices.push(i);
+                d.last_brush = i;
+            }
         });
     }
 
-    //last brush
     data.forEach((d, j) => {
-        d.selected = cf.isElementFiltered(j);
-        d.last_brush = d.brushed.findLastIndex((d) => d == true);
-        d.brush_depth = clip(1 - math.mean(d.brushed), 0.01, 0.99);
-        let brush_indices = d.brushed
-            .map((b, i) => ({b, i}))
-            .filter((b) => b.b)
-            .map((b) => b.i);
-        if (brush_indices.length > 0) {
-            d.median_brush = math.median(brush_indices);
+        if (d.brush_indices.length > 0) {
+            d.median_brush = math.median(d.brush_indices);
+            d.brush_depth =
+                0.9 * (1 - d.median_brush / d.brushed.length) + 0.05;
         } else {
             d.median_brush = 0;
+            d.brush_depth = 0.999;
         }
     });
+    console.log("set_brushed");
 }
 
 //export function set_selected(data, brush_data, cf, crossfilter_dimensions) {
@@ -272,7 +293,7 @@ export function get_selected(data, brush_data, cf, dim_x, dim_y) {
 export function update_point_style_gl(sca_gl, mode = "confusion") {
     let style = get_point_style(mode);
     let sc = (d, i) => style(d, i).fill;
-    let depth = depth_func(mode); //(d, i) => i / 100,
+    let depth = depth_func(mode);
     sca_gl.recolor(sc, {depth});
 }
 
@@ -305,6 +326,7 @@ export function depth_func(mode) {
 
 export function get_point_style(mode = "confusion") {
     let style;
+    console.log("mode", mode);
     if (mode === "confusion") {
         //set style - color by confusion (tp, tn, fp, fn)
         style = (d, i) => {

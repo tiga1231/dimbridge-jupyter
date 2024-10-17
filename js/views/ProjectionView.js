@@ -25,9 +25,9 @@ import {
     draw_path,
     get_point_style,
     set_pred,
-    set_selected_and_brushed,
-    // set_selected,
+    set_selected,
     set_selected_2,
+    set_brushed,
     update_brush_history,
     update_point_style_gl,
     depth_func,
@@ -278,14 +278,6 @@ export default class ProjectionView {
             this.n_boxes,
         );
 
-        //update data - the d.selected and d.brushed attribute base on brush
-        set_selected_and_brushed(
-            this.data,
-            this.sample_brush_history,
-            this.brush_cf,
-            this.brush_cf_dimensions,
-        );
-
         //draw fancy brush stroke (arrow, and shaded stroke)
         if (this.n_boxes == 2) {
             this.g_brush_path.call(draw_path, this.sample_brush_history, {
@@ -317,18 +309,48 @@ export default class ProjectionView {
             //compute predicates based on selected data
             let n_brushes = this.full_brush_history.length;
             let last_brush = this.full_brush_history[n_brushes - 1];
-            let predicates = this.predicate_engine.compute_predicates([
-                last_brush,
-            ]);
-            set_pred(
-                this.data,
-                predicates[0],
-                this.attributes,
-                this.predicate_cf,
-                this.predicate_cf_dimensions,
+            // let predicates = this.predicate_engine.compute_predicates([
+            //     last_brush,
+            // ]);
+            let predicates = this.predicate_engine.compute_predicates(
+                this.sample_brush_history,
             );
 
-            update_point_style_gl(this.sca, "confusion");
+            if (this.n_boxes == 1) {
+                //update data - the d.selected and d.brushed attribute base on brush
+                set_selected(
+                    this.data,
+                    this.sample_brush_history,
+                    this.brush_cf,
+                    this.brush_cf_dimensions,
+                );
+                set_pred(
+                    this.data,
+                    predicates[predicates.length - 1],
+                    this.attributes,
+                    this.predicate_cf,
+                    this.predicate_cf_dimensions,
+                );
+                update_point_style_gl(this.sca, "confusion");
+            } else if (this.n_boxes == 2) {
+                set_selected_2(
+                    this.data,
+                    this.sample_brush_history,
+                    this.brush_cf,
+                    this.brush_cf_dimensions,
+                );
+                update_point_style_gl(this.sca, "contrastive");
+            } else {
+                set_brushed(
+                    this.data,
+                    this.sample_brush_history,
+                    this.brush_cf,
+                    this.brush_cf_dimensions,
+                );
+                update_point_style_gl(this.sca, "brush");
+            }
+
+            console.log("event brushed", event);
             //update other views
             this.controller.on_projection_view_change(
                 predicates,
@@ -384,6 +406,14 @@ export default class ProjectionView {
             }
         }
 
+        //update data - the d.selected and d.brushed attribute base on brush
+        set_brushed(
+            this.data,
+            this.sample_brush_history,
+            this.brush_cf,
+            this.brush_cf_dimensions,
+        );
+
         //compute predicates based on selected data points
         let predicates = await this.predicate_engine.compute_predicates(
             this.sample_brush_history,
@@ -413,10 +443,9 @@ export default class ProjectionView {
                 update_point_style_gl(this.sca, "contrastive");
             } else {
                 //highligh all selected points by brush curve
-                console.log("THERE", event);
+                console.log("event end", event);
                 update_point_style_gl(this.sca, "brush");
             }
-
             //inform other views
             this.controller.on_projection_view_change(predicates);
         }

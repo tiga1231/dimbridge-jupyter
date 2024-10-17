@@ -194,7 +194,7 @@ export default class SplomView {
             this.splom_obj = splom_gl2(this.splom, this.data, {
                 s: (d) => this.config.splom_mark_size, //size of circle marks
                 stroke: "#eee",
-                stroke_width: 0.01,
+                stroke_width: 0.001,
                 depth: depth_func(color_mode),
                 padding_left: this.padding_left,
                 padding_right: this.padding_right,
@@ -224,6 +224,7 @@ export default class SplomView {
                 this.redraw_kde(color_mode);
             }
         } else {
+            console.log("color_mode", color_mode);
             this.recolor(color_mode);
             if (color_mode === "confusion") {
                 this.redraw_kde("selection");

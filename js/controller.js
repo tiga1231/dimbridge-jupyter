@@ -60,7 +60,8 @@ export class InteractionController {
         }
 
         //update splom view
-        if (data_size < 100000) {
+        // if (data_size < 100000) {
+        if (true) {
             let splom_attributes;
             if (this.predicate_mode === "predicate regression") {
                 // let subplot_limit = 6;

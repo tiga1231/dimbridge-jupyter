@@ -66,7 +66,7 @@ function initialize({model}) {
         width: ui_width, //leave some space for shadow
         xticks: model.get("xticks"),
         yticks: model.get("yticks"),
-        splom_mark_size: model.get("splom_mark_size"),
+        splom_mark_size: model.get("splom_s"),
 
         // image view
         image_view_width: ui_width,
