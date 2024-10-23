@@ -71,8 +71,8 @@ function initialize({model}) {
         // image view
         image_view_width: ui_width,
         n_cols: 12,
-        n_rows: 6,
-        border_width: 6,
+        n_rows: 2,
+        border_width: 4,
         padding: 5,
     };
     console.log("Widget Config:", config);

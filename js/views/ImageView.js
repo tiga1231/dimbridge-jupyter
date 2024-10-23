@@ -20,6 +20,7 @@ import {
 
 export default class ImageView {
     constructor(config) {
+        console.log("new ImageView");
         this.config = config;
         // this.config = {
         //     n_cols: 8,
@@ -41,7 +42,7 @@ export default class ImageView {
         // this.image_size =
         //     (image_view_width - 2 * padding - border_width * 2) / n_cols;
         // // let frame = make_frame(d3.select(fb));
-        this.ob = overflow_box([], image_view_width * 0.5);
+        this.ob = overflow_box([], image_view_width * 0.25);
         // d3.select(this.ob).style("overflow", "visible");
 
         return this.ob;

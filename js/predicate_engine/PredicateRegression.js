@@ -89,7 +89,6 @@ export class PredicateRegression {
             let predicate = Object.fromEntries(key_value_pairs);
             for (let attr of attributes_union) {
                 if (predicate[attr] === undefined) {
-                    console.log("attr", this.extent, this.extent[attr]);
                     predicate[attr] = this.extent[attr];
                 }
             }

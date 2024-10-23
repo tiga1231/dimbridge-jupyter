@@ -224,7 +224,6 @@ export default class SplomView {
                 this.redraw_kde(color_mode);
             }
         } else {
-            console.log("color_mode", color_mode);
             this.recolor(color_mode);
             if (color_mode === "confusion") {
                 this.redraw_kde("selection");

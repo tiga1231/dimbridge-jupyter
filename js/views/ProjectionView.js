@@ -361,9 +361,6 @@ export default class ProjectionView {
 
     async brush_end(event) {
         //sync with backend
-        // let selected = d3
-        //   .range(this.data.length)
-        //   .filter((d, i) => this.brush_cf.isElementFiltered(i));
         let selected = this.brush_cf.allFiltered().map((d) => d.index);
         this.model.set("selected", selected);
         this.model.save_changes();
@@ -407,12 +404,14 @@ export default class ProjectionView {
         }
 
         //update data - the d.selected and d.brushed attribute base on brush
-        set_brushed(
-            this.data,
-            this.sample_brush_history,
-            this.brush_cf,
-            this.brush_cf_dimensions,
-        );
+        if (this.n_boxes > 2) {
+            set_brushed(
+                this.data,
+                this.sample_brush_history,
+                this.brush_cf,
+                this.brush_cf_dimensions,
+            );
+        }
 
         //compute predicates based on selected data points
         let predicates = await this.predicate_engine.compute_predicates(
@@ -422,6 +421,12 @@ export default class ProjectionView {
         if (predicates !== undefined && predicates.length >= 1) {
             //Color scatter plot points by false positives, false negatives, etc.
             let last_predicate = predicates[predicates.length - 1];
+            set_selected(
+                this.data,
+                this.sample_brush_history,
+                this.brush_cf,
+                this.brush_cf_dimensions,
+            );
             set_pred(
                 this.data,
                 last_predicate,
@@ -432,7 +437,6 @@ export default class ProjectionView {
 
             if (this.n_boxes == 1) {
                 if (this.predicate_mode === "data extent") {
-                    // update_point_style_gl(this.sca, "selection");
                     update_point_style_gl(this.sca, "confusion");
                 } else {
                     //color points by false netagivity, false postivity, etc.
@@ -443,7 +447,6 @@ export default class ProjectionView {
                 update_point_style_gl(this.sca, "contrastive");
             } else {
                 //highligh all selected points by brush curve
-                console.log("event end", event);
                 update_point_style_gl(this.sca, "brush");
             }
             //inform other views

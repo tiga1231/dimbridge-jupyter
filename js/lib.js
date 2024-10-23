@@ -897,11 +897,9 @@ export function splom_gl2(
                             .selectAll(".x-axis .tick text")
                             .style("display", "none");
                     }
-                    // if (j !== 0) {
                     d3.select(frame)
                         .selectAll(".y-axis .tick text")
                         .style("display", "none");
-                    // }
 
                     // gl render here
                     let {sx, sy} = frame.scales; //updated sx, sy;
@@ -933,22 +931,6 @@ export function splom_gl2(
                         let c = sc(d);
                         return [...color2gl(c), 1.0];
                     };
-                    _render({
-                        positions: data.map((d) => [
-                            sx_gl(d[attrs[j]]),
-                            sy_gl(d[attrs[i]]),
-                        ]),
-                        colors: data.map((d) => sc_gl(d)),
-                        count: data.length,
-                        size: data.map(
-                            (d, i) =>
-                                s(d, i) * window.devicePixelRatio * dpi_scale,
-                        ),
-                        stroke: color2gl(stroke),
-                        stroke_width:
-                            stroke_width * window.devicePixelRatio * dpi_scale,
-                        depth: data.map((d, i) => depth(d, i)),
-                    });
 
                     //create subplot overlay
                     let overlay_ij = create_svg(plot_width, plot_height)
@@ -961,14 +943,12 @@ export function splom_gl2(
                         );
                     overlay_container.node().appendChild(overlay_ij.node());
 
-                    // let { sx, sy } = sca.scales;
                     let plot = {};
                     plot.data = data;
                     plot.x = (d) => d[attrs[j]];
                     plot.y = (d) => d[attrs[i]];
                     plot.frame = frame;
                     plot.overlay = overlay_ij;
-
                     plot.scales = {
                         sx: frame.scales.sx,
                         sy: frame.scales.sy,
@@ -977,20 +957,20 @@ export function splom_gl2(
                         sy_gl,
                         sc_gl,
                     };
+                    plot.positions = data.map((d) => [
+                        sx_gl(d[attrs[j]]),
+                        sy_gl(d[attrs[i]]),
+                    ]);
+                    plot.size = data.map(
+                        (d, i) => s(d, i) * window.devicePixelRatio * dpi_scale,
+                    );
+
                     plot.render = (data, {} = {}) => {
                         _render({
-                            positions: data.map((d) => [
-                                sx_gl(d[attrs[j]]),
-                                sy_gl(d[attrs[i]]),
-                            ]),
+                            positions: plot.positions,
                             colors: data.map((d) => sc_gl(d)),
                             count: data.length,
-                            size: data.map(
-                                (d, i) =>
-                                    s(d, i) *
-                                    window.devicePixelRatio *
-                                    dpi_scale,
-                            ),
+                            size: plot.size,
                             stroke: color2gl(stroke),
                             stroke_width:
                                 stroke_width * window.devicePixelRatio,
@@ -1000,18 +980,10 @@ export function splom_gl2(
 
                     plot.recolor_data = (colors, {depths}) => {
                         let recolor_data = {
-                            positions: data.map((d) => [
-                                sx_gl(d[attrs[j]]),
-                                sy_gl(d[attrs[i]]),
-                            ]),
+                            positions: plot.positions,
+                            size: plot.size,
                             colors: colors,
                             count: data.length,
-                            size: data.map(
-                                (d, i) =>
-                                    s(d, i) *
-                                    window.devicePixelRatio *
-                                    dpi_scale,
-                            ),
                             stroke: color2gl(stroke),
                             stroke_width:
                                 stroke_width * window.devicePixelRatio,
@@ -1022,6 +994,7 @@ export function splom_gl2(
                     plot.recolor = (colors, {depths} = {}) => {
                         _render(plot.recolor_data(colors, {depths}));
                     };
+                    plot.render(data);
                     subplots[i][j] = plot;
                 }
             }
@@ -1048,37 +1021,54 @@ export function splom_gl2(
         // return_node.subplots.forEach((row, i) => {
         //     row.forEach((subplot, j) => {
         //         if (subplot !== undefined && i != j) {
-        //             subplot.recolor(colors, {depths: depths});
+        //             subplot.recolor(colors, {depths});
         //         }
         //     });
         // });
-        let combined_data = {
-            positions: [],
-            colors: [],
-            count: 0,
-            size: [],
-            depth: [],
-            stroke_width: undefined,
-            stroke: undefined,
-        };
-        return_node.subplots.forEach((row, i) => {
-            row.forEach((subplot, j) => {
-                if (subplot !== undefined && i != j) {
-                    let d = subplot.recolor_data(colors, {depths});
-                    console.log("d", d);
-                    for (let attr of ["positions", "colors", "depth", "size"]) {
-                        combined_data[attr] = combined_data[attr].concat(
-                            d[attr],
-                        );
+        if (return_node.combined_data === undefined) {
+            return_node.combined_data = {
+                positions: [],
+                colors: [],
+                count: 0,
+                size: [],
+                depth: [],
+                stroke_width: undefined,
+                stroke: undefined,
+            };
+            return_node.subplots.forEach((row, i) => {
+                row.forEach((subplot, j) => {
+                    if (subplot !== undefined && i != j) {
+                        let d = subplot.recolor_data(colors, {depths});
+                        for (let attr of [
+                            "positions",
+                            "colors",
+                            "depth",
+                            "size",
+                        ]) {
+                            return_node.combined_data[attr] =
+                                return_node.combined_data[attr].concat(d[attr]);
+                        }
+                        return_node.combined_data.count += d.count;
+                        return_node.combined_data.stroke = d.stroke;
+                        return_node.combined_data.stroke_width = d.stroke_width;
                     }
-                    combined_data.count += d.count;
-                    combined_data.stroke = d.stroke;
-                    combined_data.stroke_width = d.stroke_width;
-                }
+                });
             });
-        });
-        console.log("combined_data", combined_data);
-        _render(combined_data);
+        } else {
+            return_node.combined_data.colors = [];
+            return_node.combined_data.depth = [];
+            return_node.subplots.forEach((row, i) => {
+                row.forEach((subplot, j) => {
+                    if (subplot !== undefined && i != j) {
+                        return_node.combined_data.colors =
+                            return_node.combined_data.colors.concat(colors);
+                        return_node.combined_data.depth =
+                            return_node.combined_data.depth.concat(depths);
+                    }
+                });
+            });
+        }
+        _render(return_node.combined_data);
     };
 
     return_node.redraw_kde = (kde_filters, kde_strokes) => {
@@ -1249,7 +1239,6 @@ export function scatter(
 
     //marks
     let r = (d, i) => Math.sqrt(s(d, i));
-    console.log("x function", sx(x(0, 1)));
     let points = fg
         .selectAll(".point")
         .data(data, (d, i) => (d.id !== undefined ? d.id : i))

@@ -90,8 +90,6 @@ export class InteractionController {
     }
 
     on_predicate_view_change(data) {
-        console.log("predicate view changed");
-
         //update projection view
         crossfilter_dimensions["x"].filterAll();
         crossfilter_dimensions["y"].filterAll();

@@ -56,7 +56,6 @@ export function set_selected(
     data.forEach((d, j) => {
         d.selected = cf.isElementFiltered(j);
     });
-    console.log("set_selected");
 }
 
 export function set_brushed(
@@ -96,7 +95,6 @@ export function set_brushed(
             d.brush_depth = 0.999;
         }
     });
-    console.log("set_brushed");
 }
 
 //export function set_selected(data, brush_data, cf, crossfilter_dimensions) {
@@ -326,7 +324,6 @@ export function depth_func(mode) {
 
 export function get_point_style(mode = "confusion") {
     let style;
-    console.log("mode", mode);
     if (mode === "confusion") {
         //set style - color by confusion (tp, tn, fp, fn)
         style = (d, i) => {
