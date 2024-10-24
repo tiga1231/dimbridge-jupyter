@@ -144,7 +144,6 @@ export default class ProjectionView {
             }
         });
     }
-
     init_brush_crossfilter(data, attributes) {
         //Take all data and an awway of attribute strings
         //Returns
