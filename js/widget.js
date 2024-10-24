@@ -73,7 +73,7 @@ function initialize({model}) {
         n_cols: 12,
         n_rows: 2,
         border_width: 4,
-        padding: 5,
+        padding: 4,
     };
     console.log("Widget Config:", config);
 }
@@ -152,7 +152,6 @@ function render({model, el}) {
         controller,
         config,
     );
-
     let image_view = image_urls.length > 0 ? new ImageView(config) : undefined;
 
     // tell controller to manage between-view interactions
@@ -166,36 +165,24 @@ function render({model, el}) {
     // add margins between view components
     d3.select(projection_view.node).style("margin-right", `${config.gap}px`);
     d3.select(predicate_view.node).style("margin-right", `${config.gap}px`);
-    if (image_view !== undefined) {
-        d3.select(image_view.node).style("margin-top", `${config.gap}px`);
-    }
 
     // return main view
-    let return_node;
+    let views;
     if (image_view !== undefined) {
-        return_node = flexbox(
-            [
-                projection_view.node,
-                predicate_view.node,
-                splom_view.node,
-                image_view.node,
-            ],
-            width,
-        );
+        d3.select(image_view.node).style("margin-top", `${config.gap}px`);
+        views = [
+            projection_view.node,
+            predicate_view.node,
+            splom_view.node,
+            image_view.node,
+        ];
     } else {
-        return_node = flexbox(
-            [
-                projection_view.node,
-                predicate_view.node,
-                splom_view.node, //
-            ],
-            width,
-        );
+        views = [projection_view.node, predicate_view.node, splom_view.node];
     }
+    let return_node = flexbox(views, width);
 
     d3.select(return_node).style("padding", "8px"); // give some space for shadow effects
     el.appendChild(return_node);
-    return cleanup;
 
     //model.on("change:x", function () {
     //    console.log(arguments);
@@ -205,11 +192,12 @@ function render({model, el}) {
     //    sca.update_position(data);
     //});
 
-    //model.on("msg:custom", (msg) => {
-    //    // custom message handling from python's
-    //    console.log("custom msg", msg);
-    //    // widget.send({ "type": "my-event", "foo": "bar" })
-    //});
+    // model.on("msg:custom", (msg) => {
+    //     // custom message handling from python's
+    //     // widget.send({ "type": "my-event", "foo": "bar" })
+    //     console.log("custom msg", msg);
+    // });
+    return cleanup;
 }
 
 export default {

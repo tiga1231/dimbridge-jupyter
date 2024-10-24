@@ -328,17 +328,13 @@ export function get_point_style(mode = "confusion") {
         //set style - color by confusion (tp, tn, fp, fn)
         style = (d, i) => {
             if (d.pred && d.selected) {
-                //tp = true positive
-                return {fill: "#742B70", stroke: "#eee"};
+                return {fill: "#742B70", stroke: "#eee"}; //tp = true positive
             } else if (!d.pred && !d.selected) {
-                //tn
-                return {fill: "#CCCCCC", stroke: "#eee"};
+                return {fill: "#CCCCCC", stroke: "#eee"}; //tn
             } else if (!d.pred && d.selected) {
-                //fn
-                return {fill: "#310BC8", stroke: "#eee"};
+                return {fill: "#310BC8", stroke: "#eee"}; //fn
             } else {
-                //fp
-                return {fill: "#A73D2F", stroke: "#eee"};
+                return {fill: "#A73D2F", stroke: "#eee"}; //fp
             }
         };
     } else if (mode === "selection") {
@@ -348,6 +344,7 @@ export function get_point_style(mode = "confusion") {
                 ? {fill: d3.schemeCategory10[0], stroke: "#eee"}
                 : {fill: "#aaa", stroke: "#eee"};
     } else if (mode === "contrastive") {
+        //color by first/second brush
         style = (d, i) =>
             d.first_brush
                 ? {fill: d3.schemeCategory10[0], stroke: "#eee"}
@@ -355,15 +352,10 @@ export function get_point_style(mode = "confusion") {
                   ? {fill: d3.schemeCategory10[1], stroke: "#eee"}
                   : {fill: "#aaa", stroke: "#eee"};
     } else if (mode === "brush") {
-        //color by selected vs. unselected
-        // let latest_brush = new Array(data);
-        // style = (d, i) => ({fill: d3.schemeCategory10[0], stroke: "#eee"});
+        //color by brush indices
         style = (d, i) => {
             if (d.last_brush === -1) {
-                return {
-                    fill: "#aaa",
-                    stroke: "#eee",
-                };
+                return {fill: "#aaa", stroke: "#eee"};
             } else {
                 return {
                     fill: d3.interpolateViridis(
@@ -373,10 +365,6 @@ export function get_point_style(mode = "confusion") {
                 };
             }
         };
-        // style = (d, i) =>
-        // d.brushed
-        //     ? {fill: d3.schemeCategory10[1], stroke: "#eee"}
-        //     : {fill: "#aaa", stroke: "#eee"};
     }
     return style;
 }
@@ -385,9 +373,6 @@ export function draw_boxes(sca, intervals, {stroke_width = 2} = {}) {
     let {sx, sy} = sca.scales;
     let n = intervals.length;
     let sc = d3.interpolateViridis;
-    // let sc = d3.interpolateCividis;
-    // let sc = d3.interpolateBlues;
-
     sca.overlay.selectAll(".bbox").remove();
     sca.overlay
         .selectAll(".bbox")
@@ -399,12 +384,10 @@ export function draw_boxes(sca, intervals, {stroke_width = 2} = {}) {
         .attr("width", (d) => Math.abs(sx(d.x0) - sx(d.x1)))
         .attr("height", (d) => Math.abs(sy(d.y0) - sy(d.y1)))
         .attr("fill", "none")
-        // .attr('fill-opacity', (d,i)=> i==n-1 ? 0.1 : 0.0)
         .attr("stroke", (d, i) => {
+            //the darker the more recent, and less dark boxes
             return sc(Math.pow(i / n, 0.3));
-        }) //the darker the more recent, and less dark boxes
+        })
         .attr("stroke-width", stroke_width);
-    // .attr("stroke-width", (d, i) => {
-    //   return 0.3 + (1.2 * i) / n;
-    // });
+    // .attr('fill-opacity', (d,i)=> i==n-1 ? 0.1 : 0.0)
 }

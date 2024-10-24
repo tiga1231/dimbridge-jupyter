@@ -256,9 +256,7 @@ def load_data(
         List of column names
     """
 
-    df = pd.read_csv(
-        dataset_filename,
-    )
+    df = pd.read_csv(dataset_filename)
 
     # drop all string columns
     for column in df.columns:

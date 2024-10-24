@@ -26,10 +26,8 @@ from traitlets import (
 
 # custom modules
 from .datautils import numpy2json, pandas2json
+from .predicate_engine import compute_predicate_sequence
 
-# try:
-#     __version__ = importlib.metadata.version("dimbridge")
-# except importlib.metadata.PackageNotFoundError:
 __version__ = "0.1.3"
 
 
@@ -89,16 +87,14 @@ class Dimbridge(anywidget.AnyWidget):
 
     splom_attributes = List([]).tag(sync=True)
     image_urls = List([]).tag(sync=True)
-    # output attributes
-    selected = List([]).tag(sync=True)
+
+    # output
+    selected = List([]).tag(sync=True)  # output attributes
+    predicates = Dict({}).tag(sync=True)  # value that triggers front end update
 
     @default("splom_attributes")
     def _default_splom_attributes(self):
         return self.data.columns[:6].tolist()
-
-    # @default("s")
-    # def _default_s(self):
-    #     return 6
 
     @default("c")
     def _default_c(self):
@@ -107,8 +103,24 @@ class Dimbridge(anywidget.AnyWidget):
     # response to value change
     @observe("selected")
     def _observe_selected(self, change):
-        # print("selected: ", change)
-        pass
+        subsets = change.new
+        self.predicates = self.get_predicate(subsets)  ## this triggers js update
+        # self.send(predicates)
+
+    def get_predicate(self, subsets):
+        subsets = np.array(subsets)
+        x0 = self.data.to_numpy()
+        columns = self.data.columns.to_list()
+        # Jointly optimize the sequence
+        predicates, qualities, parameters = compute_predicate_sequence(
+            x0,
+            subsets,
+            attribute_names=columns,
+        )
+        return dict(
+            predicates=predicates,
+            qualities=qualities,
+        )
 
     def __repr__(self):
         """bypass ipywidget's __repr__() from printing Pandas DataFrame"""

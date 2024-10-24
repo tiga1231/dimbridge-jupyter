@@ -79,10 +79,70 @@ export default class ProjectionView {
         this.brush = this.init_brush();
 
         this.predicate_engine = predicate_engine;
+        this.set_predicate_callback();
+
         this.predicate_mode = this.predicate_engine.mode; // TODO"predicate regression"
         this.brush_mode = brush_mode;
 
         return this;
+    }
+
+    set_predicate_callback() {
+        this.model.on("change:predicates", (event, data) => {
+            let {predicates, qualities} = data;
+            //find union of predicate attributes in response.predicates
+            let attributes_union = d3
+                .groups(predicates.flat(), (d) => d.attribute)
+                .map((d) => d[0]);
+            // set predicates to be an array of {attr_name:interval} objects, indexed by brush time
+            predicates = predicates.map((predicate_t) => {
+                let key_value_pairs = predicate_t.map((p) => [
+                    p.attribute,
+                    p.interval,
+                ]);
+                let predicate = Object.fromEntries(key_value_pairs);
+                for (let attr of attributes_union) {
+                    if (predicate[attr] === undefined) {
+                        predicate[attr] = this.predicate_engine.extent[attr];
+                    }
+                }
+                return predicate;
+            });
+            //update plots
+            if (predicates !== undefined && predicates.length >= 1) {
+                //Color scatter plot points by false positives, false negatives, etc.
+                let last_predicate = predicates[predicates.length - 1];
+                set_selected(
+                    this.data,
+                    this.sample_brush_history,
+                    this.brush_cf,
+                    this.brush_cf_dimensions,
+                );
+                set_pred(
+                    this.data,
+                    last_predicate,
+                    this.attributes,
+                    this.predicate_cf,
+                    this.predicate_cf_dimensions,
+                );
+                if (this.n_boxes == 1) {
+                    if (this.predicate_mode === "data extent") {
+                        update_point_style_gl(this.sca, "confusion");
+                    } else {
+                        //color points by false netagivity, false postivity, etc.
+                        update_point_style_gl(this.sca, "confusion");
+                    }
+                } else if (this.n_boxes == 2) {
+                    //color two sets of points by 2 brush boxes
+                    update_point_style_gl(this.sca, "contrastive");
+                } else {
+                    //highligh all selected points by brush curve
+                    update_point_style_gl(this.sca, "brush");
+                }
+                //inform other views
+                this.controller.on_projection_view_change(predicates);
+            }
+        });
     }
 
     init_brush_crossfilter(data, attributes) {
@@ -308,10 +368,6 @@ export default class ProjectionView {
         if (this.predicate_mode === "data extent") {
             //compute predicates based on selected data
             let n_brushes = this.full_brush_history.length;
-            let last_brush = this.full_brush_history[n_brushes - 1];
-            // let predicates = this.predicate_engine.compute_predicates([
-            //     last_brush,
-            // ]);
             let predicates = this.predicate_engine.compute_predicates(
                 this.sample_brush_history,
             );
@@ -349,8 +405,6 @@ export default class ProjectionView {
                 );
                 update_point_style_gl(this.sca, "brush");
             }
-
-            console.log("event brushed", event);
             //update other views
             this.controller.on_projection_view_change(
                 predicates,
@@ -361,8 +415,38 @@ export default class ProjectionView {
 
     async brush_end(event) {
         //sync with backend
-        let selected = this.brush_cf.allFiltered().map((d) => d.index);
-        this.model.set("selected", selected);
+        //dragging brushed region
+        if (this.n_boxes == 1) {
+            // set_selected(
+            //     this.data,
+            //     this.sample_brush_history,
+            //     this.brush_cf,
+            //     this.brush_cf_dimensions,
+            // );
+            // // let selected = this.brush_cf.allFiltered().map((d) => d.index);
+            // let selected = this.data.map((d) => d.selected);
+            // this.model.set("selected", [selected]);
+            // this.predicate_engine.compute_predicates(this.sample_brush_history);
+        } else if (this.n_boxes == 2) {
+            //annotate brush-selected data by .first_brush and .second_brush and .selected
+            set_selected_2(
+                this.data,
+                this.sample_brush_history,
+                this.brush_cf,
+                this.brush_cf_dimensions,
+            );
+        } else if (this.n_boxes > 2) {
+            //update data - the d.selected and d.brushed attribute base on brush
+            set_brushed(
+                this.data,
+                this.sample_brush_history,
+                this.brush_cf,
+                this.brush_cf_dimensions,
+            );
+            let brushed = this.data.map((d) => d.brushed);
+            console.log("brushed", brushed);
+            this.model.set("brushed", brushed);
+        }
         this.model.save_changes();
 
         if (event.selection === null) {
@@ -414,44 +498,7 @@ export default class ProjectionView {
         }
 
         //compute predicates based on selected data points
-        let predicates = await this.predicate_engine.compute_predicates(
-            this.sample_brush_history,
-        );
-
-        if (predicates !== undefined && predicates.length >= 1) {
-            //Color scatter plot points by false positives, false negatives, etc.
-            let last_predicate = predicates[predicates.length - 1];
-            set_selected(
-                this.data,
-                this.sample_brush_history,
-                this.brush_cf,
-                this.brush_cf_dimensions,
-            );
-            set_pred(
-                this.data,
-                last_predicate,
-                this.attributes,
-                this.predicate_cf,
-                this.predicate_cf_dimensions,
-            );
-
-            if (this.n_boxes == 1) {
-                if (this.predicate_mode === "data extent") {
-                    update_point_style_gl(this.sca, "confusion");
-                } else {
-                    //color points by false netagivity, false postivity, etc.
-                    update_point_style_gl(this.sca, "confusion");
-                }
-            } else if (this.n_boxes == 2) {
-                //color two sets of points by 2 brush boxes
-                update_point_style_gl(this.sca, "contrastive");
-            } else {
-                //highligh all selected points by brush curve
-                update_point_style_gl(this.sca, "brush");
-            }
-            //inform other views
-            this.controller.on_projection_view_change(predicates);
-        }
+        this.predicate_engine.compute_predicates(this.sample_brush_history);
     }
 
     get_brushed_region(selection, sx, sy) {
