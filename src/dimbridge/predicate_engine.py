@@ -12,7 +12,7 @@ from base64 import b64encode
 from natsort import natsorted
 import os
 
-# from tqdm import tqdm
+from tqdm import tqdm
 
 
 def predict(x, a, mu):
@@ -111,7 +111,8 @@ def compute_predicate_sequence(
     )
 
     # training loop
-    for e in range(n_iter):
+    bar = tqdm(range(n_iter))
+    for e in bar:
         loss_per_brush = []
         for t, st in enumerate(selected):  # for each brush, compute loss
             # TODO try subsample:
@@ -139,7 +140,7 @@ def compute_predicate_sequence(
         optimizer.step()
         if e % max(1, (n_iter // 10)) == 0:
             # print(pred.min().item(), pred.max().item())
-            print(f"[{e:>4}] loss {loss.item()}")
+            bar.set_postfix({"loss": loss.item()})
     a.detach_()
     mu.detach_()
     # plt.stem(a.abs().numpy()); plt.show()

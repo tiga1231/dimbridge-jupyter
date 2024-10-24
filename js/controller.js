@@ -56,6 +56,8 @@ export class InteractionController {
                 );
                 images.push(brushed_data.map((d) => this.image_urls[d.index]));
             }
+            console.log(predicates);
+            console.log("images", images);
             this.image_view.draw(images);
         }
 

@@ -144,6 +144,7 @@ export default class ProjectionView {
             }
         });
     }
+
     init_brush_crossfilter(data, attributes) {
         //Take all data and an awway of attribute strings
         //Returns
@@ -416,12 +417,18 @@ export default class ProjectionView {
         //sync with backend
         //dragging brushed region
         if (this.n_boxes == 1) {
-            // set_selected(
-            //     this.data,
-            //     this.sample_brush_history,
-            //     this.brush_cf,
-            //     this.brush_cf_dimensions,
-            // );
+            set_selected(
+                this.data,
+                this.sample_brush_history,
+                this.brush_cf,
+                this.brush_cf_dimensions,
+            );
+            set_brushed(
+                this.data,
+                this.sample_brush_history,
+                this.brush_cf,
+                this.brush_cf_dimensions,
+            );
             // // let selected = this.brush_cf.allFiltered().map((d) => d.index);
             // let selected = this.data.map((d) => d.selected);
             // this.model.set("selected", [selected]);
@@ -442,9 +449,8 @@ export default class ProjectionView {
                 this.brush_cf,
                 this.brush_cf_dimensions,
             );
-            let brushed = this.data.map((d) => d.brushed);
-            console.log("brushed", brushed);
-            this.model.set("brushed", brushed);
+            // let brushed = this.data.map((d) => d.brushed);
+            // this.model.set("brushed", brushed);
         }
         this.model.save_changes();
 
@@ -462,40 +468,18 @@ export default class ProjectionView {
             return;
         }
 
+        // optionally, remove brush bounding boxes (bboxes) after brush end (e.g, mouse release)
+        this.sca.overlay.selectAll(".bbox").remove();
+
         // In contrastive or curve mode (n_boxes > 1),
         // if the brush is resized rather than dragged, do nothing.
         if (this.n_boxes > 1 && event.mode !== "drag") {
             return;
-        }
-
-        // optionally, remove brush bounding boxes (bboxes) after brush end (e.g, mouse release)
-        this.sca.overlay.selectAll(".bbox").remove();
-
-        //dragging brushed region
-        if (this.n_boxes > 1 && event.mode === "drag") {
+        } else if (this.n_boxes > 1 && event.mode === "drag") {
+            //dragging brushed region
             //hide brush
             this.g_brush.selectAll(".selection").attr("display", "none");
-            if (this.n_boxes == 2) {
-                //annotate brush-selected data by .first_brush and .second_brush and .selected
-                set_selected_2(
-                    this.data,
-                    this.sample_brush_history,
-                    this.brush_cf,
-                    this.brush_cf_dimensions,
-                );
-            }
         }
-
-        //update data - the d.selected and d.brushed attribute base on brush
-        if (this.n_boxes > 2) {
-            set_brushed(
-                this.data,
-                this.sample_brush_history,
-                this.brush_cf,
-                this.brush_cf_dimensions,
-            );
-        }
-
         //compute predicates based on selected data points
         this.predicate_engine.compute_predicates(this.sample_brush_history);
     }
