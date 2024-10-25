@@ -90,6 +90,7 @@ export default class ProjectionView {
     set_predicate_callback() {
         this.model.on("change:predicates", (event, data) => {
             let {predicates, qualities} = data;
+            console.log("PREDICATES", predicates);
             //find union of predicate attributes in response.predicates
             let attributes_union = d3
                 .groups(predicates.flat(), (d) => d.attribute)
@@ -387,9 +388,21 @@ export default class ProjectionView {
                     this.predicate_cf,
                     this.predicate_cf_dimensions,
                 );
+                set_brushed(
+                    this.data,
+                    this.sample_brush_history,
+                    this.brush_cf,
+                    this.brush_cf_dimensions,
+                );
                 update_point_style_gl(this.sca, "confusion");
             } else if (this.n_boxes == 2) {
                 set_selected_2(
+                    this.data,
+                    this.sample_brush_history,
+                    this.brush_cf,
+                    this.brush_cf_dimensions,
+                );
+                set_brushed(
                     this.data,
                     this.sample_brush_history,
                     this.brush_cf,
@@ -423,36 +436,24 @@ export default class ProjectionView {
                 this.brush_cf,
                 this.brush_cf_dimensions,
             );
-            set_brushed(
-                this.data,
-                this.sample_brush_history,
-                this.brush_cf,
-                this.brush_cf_dimensions,
-            );
-            // // let selected = this.brush_cf.allFiltered().map((d) => d.index);
+            // let selected = this.brush_cf.allFiltered().map((d) => d.index);
             // let selected = this.data.map((d) => d.selected);
-            // this.model.set("selected", [selected]);
-            // this.predicate_engine.compute_predicates(this.sample_brush_history);
         } else if (this.n_boxes == 2) {
-            //annotate brush-selected data by .first_brush and .second_brush and .selected
+            //annotate brush-selected data by .first_brush and .second_brush
             set_selected_2(
                 this.data,
                 this.sample_brush_history,
                 this.brush_cf,
                 this.brush_cf_dimensions,
             );
-        } else if (this.n_boxes > 2) {
-            //update data - the d.selected and d.brushed attribute base on brush
-            set_brushed(
-                this.data,
-                this.sample_brush_history,
-                this.brush_cf,
-                this.brush_cf_dimensions,
-            );
-            // let brushed = this.data.map((d) => d.brushed);
-            // this.model.set("brushed", brushed);
         }
-        this.model.save_changes();
+        //update data - the d.selected and d.brushed attribute base on brush
+        set_brushed(
+            this.data,
+            this.sample_brush_history,
+            this.brush_cf,
+            this.brush_cf_dimensions,
+        );
 
         if (event.selection === null) {
             // remove brush bounding boxes (bboxes) after brush cancelled

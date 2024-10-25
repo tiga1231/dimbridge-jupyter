@@ -3,6 +3,9 @@ import * as d3 from "d3";
 import numeric from "https://cdn.skypack.dev/numeric@1.2.6?min";
 import math from "./lib/math.js";
 
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
 // custom
 import {DataExtentPredicate} from "./predicate_engine/DataExtentPredicate.js";
 import {PredicateRegression} from "./predicate_engine/PredicateRegression.js";
@@ -42,7 +45,7 @@ function initialize({model}) {
     let cell = d3.select(".jp-WindowedPanel-viewport");
     let cell_width = cell.node().getBoundingClientRect().width;
 
-    let ui_width = cell_width - 118;
+    let ui_width = cell_width - 120;
     console.log("cell_width", cell_width);
     // layout config
     config = {
@@ -81,6 +84,19 @@ function initialize({model}) {
 function cleanup() {
     // Optional. Cleanup callback.
     // Executed any time the view is removed from the DOM
+}
+
+//WIP
+function generatePDF(element, {width = 400, height = 400} = {}) {
+    html2canvas(element).then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("l", "px", [width, height]);
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        pdf.save("download.pdf");
+    });
 }
 
 function render({model, el}) {
@@ -180,9 +196,14 @@ function render({model, el}) {
         views = [projection_view.node, predicate_view.node, splom_view.node];
     }
     let return_node = flexbox(views, width);
-
     d3.select(return_node).style("padding", "8px"); // give some space for shadow effects
     el.appendChild(return_node);
+
+    // let export_button = d3.create("button").text("export");
+    // export_button.on("click", () => {
+    //     generatePDF(el);
+    // });
+    // el.appendChild(export_button.node());
 
     //model.on("change:x", function () {
     //    console.log(arguments);
@@ -191,7 +212,6 @@ function render({model, el}) {
     //    data.forEach((d, i) => (d[0] = new_x[i]));
     //    sca.update_position(data);
     //});
-
     // model.on("msg:custom", (msg) => {
     //     // custom message handling from python's
     //     // widget.send({ "type": "my-event", "foo": "bar" })

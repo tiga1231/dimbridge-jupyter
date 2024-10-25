@@ -66,7 +66,7 @@ def compute_predicate_sequence(
     label = torch.from_numpy(selected).float().to(device)
     # normalize
     mean = x.mean(0)
-    scale = x.std(0) + 1e-2
+    scale = x.std(0) + 1e-6
     x = (x - mean) / scale
 
     # Trainable parameters
@@ -94,8 +94,8 @@ def compute_predicate_sequence(
         n_selected = st.sum()  # st is numpy array
         n_unselected = n_points - n_selected
         instance_weight = torch.ones(x.shape[0]).to(device)
-        instance_weight[st] = n_points / n_selected
-        instance_weight[~st] = n_points / n_unselected
+        instance_weight[st] = n_points / n_selected  # helps recall
+        instance_weight[~st] = 2 * n_points / n_unselected  # helps precision
         bce = nn.BCELoss(weight=instance_weight)
         bce_per_brush.append(bce)
 
@@ -106,7 +106,7 @@ def compute_predicate_sequence(
             {"params": a, "weight_decay": 0.25},
         ],
         lr=1e-2,
-        momentum=0.4,
+        momentum=0.8,
         nesterov=True,
     )
 
@@ -119,16 +119,16 @@ def compute_predicate_sequence(
             # use all selected data
             # randomly sample unselected data with similar size
             pred = predict(x, a[t], mu[t])
-            loss = bce(pred, label[t])
+            loss = bce_per_brush[t](pred, label[t])
             # loss += (mu[t] - selection_centroids[t]).pow(2).mean() * 20
             loss_per_brush.append(loss)
             smoothness_loss = 0
             if len(selected) == 2:
                 smoothness_loss += 5 * (a[1:] - a[:-1]).pow(2).mean()
-                smoothness_loss += 1 * (mu[1:] - mu[:-1]).pow(2).mean()
+                # smoothness_loss += 1 * (mu[1:] - mu[:-1]).pow(2).mean()
             elif len(selected) > 2:
-                smoothness_loss += 500 * (a[1:] - a[:-1]).pow(2).mean()
-                smoothness_loss += 10 * (mu[1:] - mu[:-1]).pow(2).mean()
+                smoothness_loss += 50 * (a[1:] - a[:-1]).pow(2).mean()
+                # smoothness_loss += 1 * (mu[1:] - mu[:-1]).pow(2).mean()
 
         # print('bce', loss_per_brush)
         # print('smoothness', smoothness_loss.item())
@@ -138,9 +138,9 @@ def compute_predicate_sequence(
         optimizer.zero_grad()
         total_loss.backward()
         optimizer.step()
-        if e % max(1, (n_iter // 10)) == 0:
-            # print(pred.min().item(), pred.max().item())
-            bar.set_postfix({"loss": loss.item()})
+        # if e % max(1, (n_iter // 10)) == 0:
+        # print(pred.min().item(), pred.max().item())
+        bar.set_postfix({"loss": loss.item()})
     a.detach_()
     mu.detach_()
     # plt.stem(a.abs().numpy()); plt.show()
@@ -190,15 +190,13 @@ def compute_predicate_sequence(
             mu_k = (mu[t, k] * scale[k] + mean[k]).item()
             ci = [mu_k - r_k, mu_k + r_k]
             assert ci[0] < ci[1], "ci[0] is not less than ci[1]"
+
+            # feature selection based on extent range
+            should_include = not (ci[0] <= vmin[k] and ci[1] >= vmax[k])
             if ci[0] < vmin[k]:
                 ci[0] = vmin[k]
             if ci[1] > vmax[k]:
                 ci[1] = vmax[k]
-
-            # feature selection based on extent range
-            #         should_include = r[k] < 1.0 * (x[:,k].max()-x[:,k].min())
-            should_include = not (ci[0] <= vmin[k] and ci[1] >= vmax[k])
-
             if should_include:
                 if ci[0] < vmin_selected:
                     ci[0] = vmin_selected

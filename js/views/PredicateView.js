@@ -41,6 +41,7 @@ export default class PredicateView {
                 return [attr, ex];
             }),
         );
+        console.log("extent", this.extent);
         this.node = this.init_node();
         return this;
     }
@@ -221,8 +222,8 @@ function predicate_single(
         let interval_data = attributes.map((a) => {
             return {
                 attr: a,
-                vmin: extent[a][0] - 1e-6,
-                vmax: extent[a][1] + 1e-6,
+                vmin: extent[a][0],
+                vmax: extent[a][1],
                 interval_min: predicate[a][0],
                 interval_max: predicate[a][1],
             };
@@ -747,6 +748,7 @@ function predicate_multiple(
             intervals,
         } = {},
     ) {
+        console.log(extent, intervals);
         height = height || container.height;
         width = width || container.width;
         let interval_stroke_width = clip(width / (intervals.length + 2), 2, 6);
@@ -762,7 +764,7 @@ function predicate_multiple(
             .range([margin_left, width - margin_right]);
         let sy = d3
             .scaleLinear()
-            .domain(d3.extent(extent))
+            .domain(extent)
             .range([height - margin_bottom, margin_top]);
         container.scales = {sx, sy};
 
