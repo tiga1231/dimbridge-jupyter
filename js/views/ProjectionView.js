@@ -153,17 +153,21 @@ export default class ProjectionView {
         //and values beinging the corresponding crossfilter dimension objects
         let cf_attributes = attributes.slice();
         let cf = crossfilter(data);
-        let cf_dimensions = cf_attributes.map((attr) =>
-            cf.dimension((d) => d[attr]),
-        );
-        cf_attributes.push("x", "y");
-        cf_dimensions.push(
-            cf.dimension((d, i) => this.x[i]),
-            cf.dimension((d, i) => this.y[i]),
-        );
-        this.brush_cf_dimensions = Object.fromEntries(
-            zip(cf_attributes, cf_dimensions),
-        );
+        // let cf_dimensions = cf_attributes.map((attr) =>
+        // cf.dimension((d) => d[attr]),
+        // );
+        // cf_attributes.push("x", "y");
+        // cf_dimensions.push(
+        // cf.dimension((d, i) => this.x[i]),
+        // cf.dimension((d, i) => this.y[i]),
+        // );
+        // this.brush_cf_dimensions = Object.fromEntries(
+        //     zip(cf_attributes, cf_dimensions),
+        // );
+        this.brush_cf_dimensions = {
+            x: cf.dimension((d, i) => this.x[i]),
+            y: cf.dimension((d, i) => this.y[i]),
+        };
         return cf;
     }
 

@@ -56,14 +56,11 @@ export class InteractionController {
                 );
                 images.push(brushed_data.map((d) => this.image_urls[d.index]));
             }
-            console.log(predicates);
-            console.log("images", images);
             this.image_view.draw(images);
         }
 
         //update splom view
-        // if (data_size < 100000) {
-        if (true) {
+        if (data_size < 10000) {
             let splom_attributes;
             if (this.predicate_mode === "predicate regression") {
                 // let subplot_limit = 6;
