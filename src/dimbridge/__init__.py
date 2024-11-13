@@ -28,7 +28,7 @@ from traitlets import (
 from .datautils import numpy2json, pandas2json
 from .predicate_engine import compute_predicate_sequence
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 
 class Dimbridge(anywidget.AnyWidget):
