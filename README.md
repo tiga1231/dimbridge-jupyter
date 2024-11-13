@@ -14,10 +14,16 @@ See details in [example.ipynb](./example.ipynb)
 
 ## Installation
 
+- install jupyter lab: [[JupyterLab]](https://jupyter.org/install)
+
+- Install DimBridge
+
 ```sh
 pip install dimbridge
 ```
 
+- Enable widgets extension
+jupyter labextension enable widgetsnbextension
 
 ## Development installation
 

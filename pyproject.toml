@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 name = "dimbridge"
 description = "DimBridge: Interactive Explanation of Visual Patterns in Dimensionality Reductions with Predicate Logic"
 version = "0.1.4"
-dependencies = ["anywidget", "jupyterlab", "torch", "numpy", "pandas", "flask", "flask-cors"]
+dependencies = ["anywidget", "jupyterlab", "torch", "numpy", "pandas", "natsort", "matplotlib", "umap-learn", "ipywidgets"]
 readme = "README.md"
 
 [project.optional-dependencies]
