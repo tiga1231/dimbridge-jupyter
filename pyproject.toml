@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 [project]
 name = "dimbridge"
 description = "DimBridge: Interactive Explanation of Visual Patterns in Dimensionality Reductions with Predicate Logic"
-version = "0.1.5"
+version = "0.2.0"
 dependencies = [
     "anywidget", 
     "ipywidgets",
@@ -44,7 +44,7 @@ build_cmd = "build"
 
 
 [tool.bumpver]
-current_version = "0.1.5"
+current_version = "0.2.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message  = "Bump version {old_version} -> {new_version}"
 commit          = true
