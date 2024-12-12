@@ -32,7 +32,6 @@ import {
 } from "./lib.js";
 // import "./widget.css";
 
-let cell_width;
 let config;
 
 // widget
@@ -40,13 +39,24 @@ function initialize({model}) {
     console.log("DimBridge init");
     //set the dimbridge width to be Jupyter notebook cell width
     // let cell = d3.select(".jp-OutputArea-output");
-    // let cell = d3.selectAll(".jp-Cell-outputWrapper");
-    // let cell_width = parseFloat(cell.style("width")) || 1000;
-    let cell = d3.select(".jp-WindowedPanel-viewport");
-    let cell_width = cell.node().getBoundingClientRect().width;
+    //
+    //jupyterlab 3.0.0
+    let cell, cell_width;
+    cell = d3.selectAll(".jp-Cell-outputWrapper");
+    cell_width = parseFloat(cell.style("width"));
+    if (isNaN(cell_width)) {
+        //jupyterlab 4.*
+        cell = d3.select(".jp-WindowedPanel-viewport");
+        if (cell._groups[0] !== null) {
+            cell_width = cell.node().getBoundingClientRect().width;
+        } else {
+            cell_width = 1000;
+        }
+    }
+    console.log("cell_width", cell_width);
 
     let ui_width = cell_width - 120;
-    console.log("cell_width", cell_width);
+
     // layout config
     config = {
         //between-view configs
@@ -67,6 +77,7 @@ function initialize({model}) {
         splom_spacing: 4,
         splom_font_size: 12,
         width: ui_width, //leave some space for shadow
+        cell_width: cell_width,
         xticks: model.get("xticks"),
         yticks: model.get("yticks"),
         splom_mark_size: model.get("splom_s"),
@@ -100,7 +111,7 @@ function generatePDF(element, {width = 400, height = 400} = {}) {
 }
 
 function render({model, el}) {
-    let width = cell_width;
+    let width = config.cell_width;
     console.log("DimBridge render", model, el);
 
     //get data from python
@@ -217,7 +228,8 @@ function render({model, el}) {
     //     // widget.send({ "type": "my-event", "foo": "bar" })
     //     console.log("custom msg", msg);
     // });
-    return cleanup;
+    // return cleanup;
+    return;
 }
 
 export default {
