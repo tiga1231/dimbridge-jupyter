@@ -262,4 +262,3 @@ export default {
     cleanup,
     render,
 }; // end of export defalt
-}; // end of export defalt
