@@ -1,17 +1,14 @@
-import torch
-from torch import nn
-from torch import optim
+import io
+import os
+from base64 import b64encode
+from glob import glob
+from textwrap import dedent
 
 import numpy as np
 import pandas as pd
-
-import io
-from glob import glob
-from textwrap import dedent
-from base64 import b64encode
+import torch
 from natsort import natsorted
-import os
-
+from torch import nn, optim
 from tqdm import tqdm
 
 
@@ -116,6 +113,7 @@ def compute_predicate_sequence(
         loss_per_brush = []
         for t, st in enumerate(selected):  # for each brush, compute loss
             # TODO try subsample:
+
             # use all selected data
             # randomly sample unselected data with similar size
             pred = predict(x, a[t], mu[t])
