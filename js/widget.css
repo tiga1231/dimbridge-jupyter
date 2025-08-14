@@ -1,0 +1,5 @@
+.jp-OutputArea-output {
+    max-width: 800px; /* Set a maximum width */
+    width: 100%; /* Occupy full available width up to max-width */
+    background: red;
+}

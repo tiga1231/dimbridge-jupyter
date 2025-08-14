@@ -30,32 +30,47 @@ import {
     hex2rgb,
     normalize,
 } from "./lib.js";
-// import "./widget.css";
+import "./widget.css";
 
 let config;
 
 // widget
 function initialize({model}) {
-    console.log("DimBridge init");
+    console.log("DimBridge initialize()");
+    console.log("model", model);
+
     //set the dimbridge width to be Jupyter notebook cell width
     // let cell = d3.select(".jp-OutputArea-output");
-    //
-    //jupyterlab 3.0.0
-    let cell, cell_width;
-    cell = d3.selectAll(".jp-Cell-outputWrapper");
-    cell_width = parseFloat(cell.style("width"));
-    if (isNaN(cell_width)) {
-        //jupyterlab 4.*
-        cell = d3.select(".jp-WindowedPanel-viewport");
-        if (cell._groups[0] !== null) {
-            cell_width = cell.node().getBoundingClientRect().width;
-        } else {
-            cell_width = 1000;
-        }
-    }
-    console.log("cell_width", cell_width);
 
-    let ui_width = cell_width - 120;
+    // // automatic UI width
+    // let cell = null;
+    // let cell_width = -1;
+
+    ////jupyterlab 3.0.0
+    ////tested on jupyterlab 4.4.5
+    //cell = d3.selectAll(".jp-Cell-outputWrapper");
+    //cell_width = cell.node().getBoundingClientRect().width;
+    //console.log("cell_width =", cell_width);
+
+    //if (isNaN(cell_width)) {
+    //    //jupyterlab 4.*
+    //    cell = d3.select(".jp-WindowedPanel-viewport");
+    //    if (cell._groups[0] !== null) {
+    //        cell_width = cell.node().getBoundingClientRect().width;
+    //    }
+    //}
+    //console.log("cell_width 2", cell_width);
+    //if (cell_width == 0) {
+    //    // jupyterlab 4.4.5
+    //    cell = d3.selectAll("jp-OutputArea-output");
+    //    cell_width = cell.node().getBoundingClientRect().width;
+    //}
+    //console.log("cell_width 3", cell_width);
+
+    // //// default to 1000 if auto width does not work
+    // cell_width = cell_width || 1000;
+    // console.log("final cell_width", cell_width);
+    // let ui_width = cell_width - 120; //leave some space for shadow
 
     // layout config
     config = {
@@ -76,20 +91,20 @@ function initialize({model}) {
 
         splom_spacing: 4,
         splom_font_size: 12,
-        width: ui_width, //leave some space for shadow
-        cell_width: cell_width,
         xticks: model.get("xticks"),
         yticks: model.get("yticks"),
         splom_mark_size: model.get("splom_s"),
 
         // image view
-        image_view_width: ui_width,
         n_cols: 12,
         n_rows: 2,
         border_width: 4,
         padding: 4,
     };
     console.log("Widget Config:", config);
+    // return () => {
+    //     // Optional: Called when the widget is destroyed.
+    // };
 }
 
 function cleanup() {
@@ -111,8 +126,15 @@ function generatePDF(element, {width = 400, height = 400} = {}) {
 }
 
 function render({model, el}) {
-    let width = config.cell_width;
     console.log("DimBridge render", model, el);
+    console.log("model", model);
+    console.log("el", el);
+    config.cell_width = el.getBoundingClientRect().width;
+    config.width = config.cell_width - 120; // leave some space for fancy frame shadow
+    config.image_view_width = config.width;
+
+    let width = config.width;
+    console.log("UI width", width);
 
     //get data from python
     let data = pandas2array(model.get("data"));
@@ -158,11 +180,12 @@ function render({model, el}) {
     //init controller
     let controller = new InteractionController(
         data,
-        image_urls,
+        image_urls.length > 0 ? image_urls : undefined,
         predicate_mode,
     );
 
     //init views
+    console.log(data, x, y, s, c, model, controller, config);
     let projection_view = new ProjectionView(
         data,
         {x, y, s, c, brush_mode, predicate_engine},
@@ -228,8 +251,9 @@ function render({model, el}) {
     //     // widget.send({ "type": "my-event", "foo": "bar" })
     //     console.log("custom msg", msg);
     // });
-    // return cleanup;
-    return;
+    // return () => {
+    //     // Optional: Called when the view is destroyed.
+    // };
 }
 
 export default {
@@ -237,4 +261,5 @@ export default {
     config,
     cleanup,
     render,
+}; // end of export defalt
 }; // end of export defalt

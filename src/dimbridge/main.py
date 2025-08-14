@@ -2,27 +2,14 @@
 import importlib.metadata
 import pathlib
 
+# anywidget / UI
+import anywidget
 # computational
 import numpy as np
 import pandas as pd
-
-# anywidget / UI
-import anywidget
 import traitlets
-from traitlets import observe, default
-from traitlets import (
-    Any,
-    Bool,
-    Callable,
-    Dict,
-    Enum,
-    Float,
-    Instance,
-    Int,
-    List,
-    Set,
-    Unicode,
-)
+from traitlets import (Any, Bool, Callable, Dict, Enum, Float, Instance, Int,
+                       List, Set, Unicode, default, observe)
 
 # custom modules
 from .datautils import numpy2json, pandas2json

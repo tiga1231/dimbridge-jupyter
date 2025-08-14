@@ -234,6 +234,7 @@ export default class ProjectionView {
 
         // let style = get_point_style("selection");
         // let sc = (d, i) => style(d, i).fill;
+        console.log(this.node, data, this.x, this.y);
         this.sca = scatter_gl(d3.select(this.node), data, {
             x: (d, i) => this.x[i],
             y: (d, i) => this.y[i],
