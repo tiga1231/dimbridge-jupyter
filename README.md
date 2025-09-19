@@ -76,8 +76,8 @@ jupyter labextension enable widgetsnbextension
 
 ## Development installation
 
-Create a virtual environment and and install dimbridge in *editable* mode with the
-optional development dependencies:
+Create a virtual environment. Rather than using pip, install the dimbridge under this repo in *editable* mode with the
+ development dependencies:
 
 ```sh
 python -m venv .venv
@@ -85,13 +85,12 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-You then need to install the JavaScript dependencies and run the development server.
-
+You then need to install the JavaScript dependencies and keep the development server running. 
 ```sh
 npm install
 npm run dev
 ```
+This will bundle the JS code and monitor edits in JS code to keep the dev version of the widget updated
 
-Open `example.ipynb` in JupyterLab, VS Code, or your favorite editor
-to start developing. Changes made in `js/` will be reflected
-in the notebook.
+Open `example.ipynb` in JupyterLab, VS Code, or your favorite editor to start developing. 
+Changes made in `js/` will be reflected in the notebook.
