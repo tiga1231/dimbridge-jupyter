@@ -1,4 +1,4 @@
-# dimbridge
+# DimBridge-Jupyter
 
 A Jupyter lab widget for interpreting visual patterns in dimensionality reduction plots
 
